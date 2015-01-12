@@ -1,7 +1,7 @@
-function batch_record(CHANNELS,OUTPUT,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW,RESTARTS)
+function batch_record(CHANNELS,OUTPUT,stop_time,save_freq,note,fs,base_dir,PREVIEW,restarts)
 %
 %
-% batch_record(CHANNELS,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW)
+% batch_record(CHANNELS,stop_time,save_freq,note,fs,base_dir,PREVIEW)
 %
 % CHANNELS
 % vector of the channel(s) to record from (default [0])
@@ -16,7 +16,7 @@ function batch_record(CHANNELS,OUTPUT,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW,RE
 % OUTPUT.data
 % data to be fed out (must equal n of channels)
 %
-% OUTPUT.SR
+% OUTPUT.fs
 % output sampling rate
 %
 % OUTPUT.interval
@@ -25,19 +25,19 @@ function batch_record(CHANNELS,OUTPUT,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW,RE
 % OUTPUT.repeat
 % how often are we repeating the output?
 %
-% TIME       
+% stop_time       
 % time vector specifying STOP time (default [0 0 1 0])
 %
-% SAVE_FREQ    
-% when to start streaming to a new data file (default [0 0 0 15])
+% save_freq    
+% how often to save to disk (in s, default: 60)
 %
-% NOTE    
+% note    
 % string that accepts standard escape characters to include in the log (default '')
 %
-% SR    
+% fs    
 % sampling rate (default 40000)
 %
-% BASE_DIR
+% base_dir
 % base data directory for storing data
 %
 % PREVIEW
@@ -48,16 +48,16 @@ function batch_record(CHANNELS,OUTPUT,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW,RE
 % scaled ordinate in the preview window
 %
 %
-% TIME AND SAVE_FREQ are vectors of the following format:
+% stop_time AND save_freq are vectors of the following format:
 % [days hours minutes seconds]
 %
 % Data files are stored in an automatically maintained directory
 % hierarchy.  The variable data_directory in the script is the base
 % directory, then data is sorted using the following directory structure:
 %
-% data_directory/YEAR/MONTH/DAY/TIME
+% data_directory/YEAR/MONTH/DAY/stop_time
 %
-% Where TIME is the start time (in HHMMSS format)
+% Where stop_time is the start time (in HHMMSS format)
 %
 % Examples:
 %
@@ -75,24 +75,65 @@ function batch_record(CHANNELS,OUTPUT,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW,RE
 
 % preview is deprecated ATM
 
-if nargin<9 | isempty(RESTARTS), RESTARTS=0; end
-if nargin<7 | isempty(BASE_DIR), BASE_DIR='E:\chronic_data'; end
-if nargin<6 | isempty(SR), SR=40000; end
-if nargin<5 | isempty(NOTE), NOTE=''; end
-if nargin<4 | isempty(SAVE_FREQ), SAVE_FREQ=[0 0 1 0]; end
-if nargin<3 | isempty(TIME), TIME=inf; end
-if nargin<2, OUTPUT=[]; end
-if nargin==0, CHANNELS=[0]; end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PARAMETER COLLECTION %%%%%%%%%%%%%%%%%
 
-rec_datevec=datevec(addtodate(today,TIME(1),'day'));
-rec_datevec(4:6)=TIME(2:4);
+if nargin<2 | isempty(OUTPUT), OUTPUT=[]; end
+if nargin<1 | isempty(CHANNELS), CHANNELS=0; end
+
+nparams=length(varargin);
+
+restarts=0;
+base_dir=fullfile(pwd,'nidaq');
+fs=40e3; % sampling frequency (in Hz)
+note='';
+save_freq=60; % save frequency (in s)
+stop_time=[inf 0 0 0 ]; % when to stop recording
+in_device='dev2';
+out_device='dev2';
+folder_format='yyyy-mm-dd';
+out_dir='mat';
+
+if mod(nparams,2)>0
+	error('Parameters must be specified as parameter/value pairs!');
+end
+
+for i=1:2:nparams
+	switch lower(varargin{i})
+		case 'note'
+			note=varargin{i+1};
+		case 'restarts'
+			restarts=varargin{i+1};
+		case 'base_dir'
+			base_dir=varargin{i+1};
+		case 'fs'
+			fs=varargin{i+1};
+		case 'save_freq'
+			save_freq=varargin{i+1};
+		case 'in_device'
+			in_device=varargin{i+1};
+		case 'out_device'
+			out_device=varargin{i+1};
+		case 'folder_format'
+			folder_format=varargin{i+1};
+		case 'out_dir'
+			out_dir=varargin{i+1};
+		otherwise
+	end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TODO: finish save_directory creation
+% TODO: put preview back in
+% TODO: change function names as appropriate
+% TODO: simplify as much as possible!
+
+rec_datevec=datevec(addtodate(today,stop_time(1),'day'));
+rec_datevec(4:6)=stop_time(2:4);
 disp(['Will record until ' datestr(rec_datevec)]);
 
 % compute the save frequency in seconds
 
-save_fs_secs=sum(SAVE_FREQ.*[86400 3600 60 1]);
-disp(['Will save every ' num2str(SAVE_FREQ(1)) ' days ' num2str(SAVE_FREQ(2)) ...
-	' hours ' num2str(SAVE_FREQ(3)) ' minutes and ' num2str(SAVE_FREQ(4)) ' seconds ']);
+sprintf('Will save every %g minutes\n',save_freq/60);
 
 % create the necessary directories for dumping the data
 
@@ -108,34 +149,10 @@ if length(daqs)>0
 	delete(daqs);
 end
 
-if ~exist(fullfile(BASE_DIR,year,month,day,start_time,'mat'),'dir')
-	mkdir(fullfile(BASE_DIR,year,month,day,start_time,'mat'))
-end
-
-% the final directory is the start time in HHMMSS format
-
-save_directory=fullfile(BASE_DIR,year,month,day,start_time,'mat');
-
-% open the analog input object
-
-AI = analoginput('nidaq','dev2');
-set(AI,'InputType','SingleEnded');
-ch=addchannel(AI,CHANNELS);
-actualrate=setverify(AI,'SampleRate',SR);
-
-% check to see if the actual sampling rate meets our specs, otherwise bail
-
-if actualrate ~= SR
-	error(['Actual sampling rate (' num2str(actualrate) ') not equal to target (' num2str(SR) ')' ]);
-end
-
-% start logging
-
-logfile=fopen(fullfile(save_directory,'..','log.txt'),'w');
+logfile=fopen(fullfile(save_dir,'..','log.txt'),'w');
 fprintf(logfile,'Run started at %s\n\n',datestr(now));
-fprintf(logfile,[NOTE '\n']);
-fprintf(logfile,'User specified end time: %g days %g hours %g minutes %g seconds\n',TIME(1),TIME(2),TIME(3),TIME(4));
-fprintf(logfile,'User specified save frequency: %g days %g hours %g minutes %g seconds\n',SAVE_FREQ(1),SAVE_FREQ(2),SAVE_FREQ(3),SAVE_FREQ(4));
+fprintf(logfile,[note '\n']);
+fprintf(logfile,'User specified save frequency: %g minutes\n',save_fs/60);
 fprintf(logfile,'Recording until: %s\n',datestr(rec_datevec));
 fprintf(logfile,'Sampling rate:  %g\nChannels=[',actualrate);
 
@@ -144,63 +161,79 @@ for i=1:length(CHANNELS)
 end
 fprintf(logfile,']\n\n');
 
+% current save_dir can store logfile
+
+save_dir=fullfile(base_dir,datestr(now,folder_format),'mat');
+
+if ~exist(save_dir,'dir'), mkdir(save_dir); end
+
+
+% open the analog input object
+
+analog_input = analoginput('nidaq',in_device);
+set(analog_input,'InputType','SingleEnded');
+ch=addchannel(analog_input,CHANNELS);
+actualrate=setverify(analog_input,'SampleRate',fs);
+
+% check to see if the actual sampling rate meets our specs, otherwise bail
+
+if actualrate ~= fs
+	error(['Actual sampling rate (' num2str(actualrate) ') not equal to target (' num2str(fs) ')' ]);
+end
+
 % set the parameters of the analog input object
 
-set(AI,'TriggerType','Immediate')
-recording_duration=save_fs_secs*actualrate;
-set(AI,'SamplesPerTrigger',inf)
+set(analog_input,'TriggerType','Immediate')
+recording_duration=save_freq*actualrate;
+set(analog_input,'SamplesPerTrigger',inf)
+
+% set up output
 
 if ~isempty(OUTPUT)
 
-	% add a for loop and make AO a cell array if we want to have multiple outputs?
+	% add a for loop and make analog_output a cell array if we want to have multiple outputs?
 
-	AO=analogoutput('nidaq','dev2');
-	ch=addchannel(AO,OUTPUT.channels);
-	actualrate=setverify(AO,'SampleRate',OUTPUT.SR);
+	analog_output=analogoutput('nidaq',out_device);
+	ch=addchannel(analog_output,OUTPUT.channels);
+	actualrate=setverify(analog_output,'SampleRate',OUTPUT.fs);
 
-	if actualrate ~= SR
-		error(['Actual sampling rate (' num2str(actualrate) ') not equal to target (' num2str(SR) ')' ]);
+	if actualrate ~= fs
+		error(['Actual sampling rate (' num2str(actualrate) ') not equal to target (' num2str(fs) ')' ]);
 	end
 
-	%set(AO,'TriggerType','Manual');
+	%set(analog_output,'TriggerType','Manual');
 	% compute the trigger times 
 
 	current_time=now;
    
-
 	% empty means one-shot
 
 	if isempty(OUTPUT.interval) | all(OUTPUT.interval==0)
-		set(AO,'TriggerType','Immediate');
+		set(analog_output,'TriggerType','Immediate');
 	else
 		total_secs=etime(datevec(current_time),rec_datevec);
-		output_interval_secs=sum(OUTPUT.interval.*[86400 3600 60 1]);
-		output_times_sec=1:output_interval_secs:total_secs;
+		output_times_sec=1:OUTPUT.interval:total_secs;
 
-		set(AO,'TriggerType','Manual');
-		set(AO,'TimerPeriod',output_interval_secs);
-		set(AO,'TimerFcn',{@output_data,logfile,OUTPUT.data});
+		set(analog_output,'TriggerType','Manual');
+		set(analog_output,'TimerPeriod',OUTPUT.interval);
+		set(analog_output,'TimerFcn',{@output_data,logfile,OUTPUT.data});
 	end
 
-
-	putdata(AO,OUTPUT.data)
+	putdata(analog_output,OUTPUT.data)
 
 end
 
-% uncomment the next two lines to stream directly to disk to avoid memory limitations
-% note that you'll need to specify temp_directory for this to work
-
 % start the analog input object
 
-set(AI,'SamplesAcquiredFcnCount',recording_duration);
-set(AI,'SamplesAcquiredFcn',{@dump_data,save_directory,logfile,actualrate});
+set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
+set(analog_input,'SamplesAcquiredFcn',{@dump_data,save_dir,logfile,actualrate});
 
 % this may be a kloodge, but keep attempting to record!!!
 
-objects{1}=AI;
+objects{1}=analog_input;
 
 if ~isempty(OUTPUT)
-	object{2}=AO;
+	object{2}=analog_output;
 end
 
 button_figure=figure('Visible','on','Name',['Push button v.001a'],...
@@ -234,14 +267,14 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 		'Value',0,'Position',[.1 .05 .7 .4],...
 		'call',{@early_quit,button_figure});
 
-set(AI,'DataMissedFcn',{@restart_routine,logfile,objects,status_text,start_button,stop_button});
-set(AI,'RuntimeErrorFcn',{@restart_routine,logfile,objects,status_text,start_button,stop_button});
-cleanup_object=onCleanup(@()cleanup_routine([],[],save_directory,logfile,objects,button_figure));
+set(analog_input,'DataMissedFcn',{@restart_routine,logfile,objects,status_text,start_button,stop_button});
+set(analog_input,'RuntimeErrorFcn',{@restart_routine,logfile,objects,status_text,start_button,stop_button});
+cleanup_object=onCleanup(@()cleanup_routine([],[],save_dir,logfile,objects,button_figure));
 
-start(AI)
+start(analog_input)
 
 if ~isempty(OUTPUT)
-	start(AO);
+	start(analog_output);
 end
 
 
@@ -270,170 +303,5 @@ end
 
 end
 
-function stop_routine(obj,event,logfile,objects,status_text,start_button,stop_button)
-	
-	disp('Pausing acquisition...');
-
-	for i=1:length(objects)
-		stop(objects{i});
-	end
-
-	counter=0;
-	for i=1:length(objects)
-		if strcmpi(get(objects{i},'Running'),'Off')
-			counter=counter+1;
-		end
-	end
 
 
-	set(start_button,'enable','on');
-	set(stop_button,'enable','off');
-	set(status_text,'string','Status:  stopped','ForegroundColor','r');
-	disp(['Stopped ' num2str(counter) ' out of ' num2str(length(objects)) ' objects']);
-	fprintf(logfile,'\nRun stopped at %s',datestr(now));
-end
-
-function start_routine(obj,event,logfile,objects,status_text,start_button,stop_button)
-
-	disp('Resuming acquisition...');
-
-	for i=1:length(objects)
-		start(objects{i});
-	end
-	
-	counter=0;
-	for i=1:length(objects)
-		if strcmpi(get(objects{i},'Running'),'On')
-			counter=counter+1;
-		end
-	end
-
-	set(start_button,'enable','off');
-	set(stop_button,'enable','on');
-	set(status_text,'string','Status:  running','ForegroundColor','g');
-	disp(['Resumed ' num2str(counter) ' out of ' num2str(length(objects)) ' objects']);
-	fprintf(logfile,'\nRun restarted at %s\n',datestr(now));
-end
-
-function restart_routine(obj,event,logfile,objects,status_text,start_button,stop_button)
-
-	disp('Error occurred, restarting the acquisition...')
-	
-	fprintf(logfile,'\nError encountered at%s\n',datestr(now));
-	disp('Stopping all objects and flushing data');
-
-	for i=1:length(objects)
-		stop(objects{i});
-		flushdata(objects{i});
-	end
-
-	counter=0;
-	for i=1:length(objects)
-		if strcmpi(get(objects{i},'Running'),'Off')
-			counter=counter+1;
-		end
-	end
-
-	disp(['Stopped ' num2str(counter) ' out of ' num2str(length(objects)) ' objects']);
-
-	disp('Pausing for ten seconds...');
-
-	set(start_button,'enable','off');
-	set(stop_button,'enable','off');
-	pause(10);
-	set(status_text,'string','Status:  error (pausing and restarting)','ForegroundColor','g');
-
-	for i=1:length(objects)
-		start(objects{i});
-	end
-	
-	counter=0;
-	for i=1:length(objects)
-		if strcmpi(get(objects{i},'Running'),'On')
-			counter=counter+1;
-		end
-	end
-
-	disp(['Resumed ' num2str(counter) ' out of ' num2str(length(objects)) ' objects']);
-
-	set(start_button,'enable','off');
-	set(stop_button,'enable','on');
-
-	set(status_text,'string','Status:  running','ForegroundColor','g');
-	fprintf(logfile,'\nRun restarted at %s\n',datestr(now));
-
-end
-
-function cleanup_routine(obj,event,save_directory,logfile,objects,figure)
-
-	disp('Cleaning up and quitting...');
-
-	fprintf(logfile,'\nRun complete at %s',datestr(now));
-	done_signal=fopen(fullfile(save_directory,'..','.done_recording'),'w');
-	fclose(done_signal);
-	fclose(logfile);
-	for i=1:length(objects)
-		stop(objects{i});delete(objects{i});
-	end
-	daqreset;
-	disp('Run complete!');
-
-	if nargin==6
-		if ishandle(figure)
-			close(figure);
-		end
-	end
-
-end
-
-function dump_data(obj,event,save_directory,logfile,actualrate)
-
-	% basically, a circular buffer is used!
-
-    	%disp('Dumping data...');
-	
-	% if getdata trips up clear the buffer and keep going!
-
-	try
-		[data.voltage,data.time,data.start_time]=getdata(obj,obj.SamplesAvailable);
-		datafile_name=[ 'data_' datestr(now,30) '.mat' ];
-		data.sampling_rate=actualrate;
-		save(fullfile(save_directory,datafile_name),'data');
-		fprintf(logfile,'%s saved successfully at %s\n',fullfile(save_directory,datafile_name),datestr(now));
-		disp([ fullfile(save_directory,datafile_name) ' saved successfully at ' datestr(now) ]);    
-	catch
-		flushdata(obj);
-	end
-
-	% comment this out to approximate a circular buffer
-	%flushdata(AI);	% flush residual samples accumulated during data collection
-end
-
-function output_data(obj,event,logfile,output_data)
-	trigger(obj);
-	fprintf(logfile,'Triggered at %s\n', datestr(now));
-	disp(['Trigger event occurred at ' datestr(now)]);
-	putdata(obj,output_data);
-end
-
-function recurse(obj,event,save_directory,logfile,CHANNELS,OUTPUT,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW,button_figure,RESTARTS)
-
-	done_signal=fopen(fullfile(save_directory,'..','.done_recording'),'w');
-	fclose(done_signal);
-	fclose(logfile);
-	daqreset;
-	disp('Hit a data missed event or run-time error, restarting!');	
-
-	if nargin==13
-		close(button_figure);
-	end
-
-	RESTARTS=RESTARTS+1;
-	if RESTARTS<5
-		batch_record(CHANNELS,OUTPUT,TIME,SAVE_FREQ,NOTE,SR,BASE_DIR,PREVIEW);
-	end
-end
-
-function early_quit(obj,event,button_figure)
-	delete(button_figure)
-end

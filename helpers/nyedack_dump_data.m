@@ -9,7 +9,7 @@ function dump_data(obj,event,save_dir,folder_format,out_dir,logfile,actualrate)
 try
 	[data.voltage,data.time,data.start_time]=getdata(obj,obj.SamplesAvailable);
 	datafile_name=[ 'data_' datestr(now,30) '.mat' ];
-	data.sampling_rate=actualrate;
+	data.fs=actualrate;
 
 	save_dir=fullfile(save_dir,datestr(now,folder_format),out_dir);
 	if ~exist(save_dir,'dir')

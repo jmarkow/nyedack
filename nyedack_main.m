@@ -187,6 +187,27 @@ set(analog_input,'SamplesPerTrigger',inf)
 save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
 if ~exist(save_dir,'dir'), mkdir(save_dir); end
 
+logfile_name=fullfile(save_dir,'..','log.txt');
+
+if exist(logfile_name,'file')
+	nameflag=1;
+else
+	nameflag=0;
+end
+
+counter=1;
+basename=logfile_name;
+
+while nameflag
+	logfile_name=sprintf('%s_%i',basename,counter);
+	if exist(logfile_name,'file')
+		nameflag=1;
+		counter=counter+1;
+	else
+		nameflag=0;
+	end
+end
+
 logfile=fopen(fullfile(save_dir,'..','log.txt'),'w');
 fprintf(logfile,'Run started at %s\n\n',datestr(now));
 fprintf(logfile,[note '\n']);
@@ -305,7 +326,9 @@ if preview_enable
 	for i=1:length(nchannels)
 		cur_column=floor(i/nrows);
 		idx=rem(i/nrows)+1;
-		channel_axis(i)=axes('Units','Normalized','Position',[.1,.1,(1/nrows)*idx,(1/ncolumns)*cur_column],'parent',preview_figure);
+		channel_axis(i)=axes('Units','Normalized','Position',...
+			[(.9/ncolumns)*cur_column,1-((.9/nrows)*idx),...
+			(.8/nrows),(.8/ncolumns)],'parent',preview_figure);
 	end
 
 	refresh_string={};
@@ -325,7 +348,7 @@ if preview_enable
 		'Units','Normalized',...
 		'FontSize',15,...
 		'Position',[.1 .05 .05 .1],...
-		'Call',@nyedack_set_refresh);
+		'Call',{@nyedack_set_refresh,analog_input});
 
 	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',voltage_string,...
@@ -333,6 +356,16 @@ if preview_enable
 		'FontSize',15,...
 		'Position',[.3 .05 .05 .1],...
 		'Call',@nyedack_set_voltage);
+
+	global preview_voltage_scale;
+	voltage_val=get(voltage_setting,'value');
+	preview_voltage_scale=voltage_scales(voltage_val);
+
+	refresh_val=get(refresh_setting,'value');
+	cur_rate=refresh_rates(refresh_val)/1e3; % rates are in ms
+
+	set(analog_input,'TimerPeriod',cur_rate);
+	set(analog_input,'TimerFcn',@{nyedack_preview_data,channel_axis})
 
 end
 

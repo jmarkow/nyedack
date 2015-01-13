@@ -1,4 +1,4 @@
-function dump_data(obj,event,save_dir,folder_format,out_dir,logfile,actualrate)
+function dump_data(obj,event,save_dir,folder_format,out_dir,logfile,actualrate,channel_labels)
 
 % basically, a circular buffer is used!
 
@@ -9,7 +9,9 @@ function dump_data(obj,event,save_dir,folder_format,out_dir,logfile,actualrate)
 try
 	[data.voltage,data.time,data.start_time]=getdata(obj,obj.SamplesAvailable);
 	datafile_name=[ 'data_' datestr(now,30) '.mat' ];
+	
 	data.fs=actualrate;
+	data.labels=channel_labels;
 
 	save_dir=fullfile(save_dir,datestr(now,folder_format),out_dir);
 	if ~exist(save_dir,'dir')
@@ -22,6 +24,3 @@ try
 catch
 	flushdata(obj);
 end
-
-% comment this out to approximate a circular buffer
-%flushdata(AI);	% flush residual samples accumulated during data collection

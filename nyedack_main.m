@@ -159,6 +159,12 @@ sprintf('Will save every %g minutes\n',save_freq/60);
 % create the necessary directories for dumping the data
 
 nchannels=length(INCHANNELS);
+nlabels=length(channel_labels);
+
+for i=(nchannels-nlabels)+1:nchannels
+	channel_labels{i}=sprintf('CH %i',i);
+end
+
 start_time=([datestr(now,'HHMMSS')]);
 
 daqs=daqfind;
@@ -264,7 +270,7 @@ end
 % start the analog input object
 
 set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
-set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,base_dir,folder_format,out_dir,logfile,actualrate});
+set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,base_dir,folder_format,out_dir,logfile,actualrate,channel_labels});
 
 % this may be a kloodge, but keep attempting to record!!!
 
@@ -302,17 +308,11 @@ start_button=uicontrol(button_figure,'style','pushbutton',...
 
 set(stop_button,'call',{@nyedack_stop_routine,logfile,objects,status_text,start_button,stop_button});
 set(start_button,'call',{@nyedack_start_routine,logfile,objects,status_text,start_button,stop_button});
-quit_button=uicontrol(button_figure,'style','pushbutton',...
-		'String','Quit Acquisition',...
-		'units','normalized',...
-		'FontSize',15,...
-		'Value',0,'Position',[.1 .05 .7 .4],...
-		'call',{@nyedack_early_quit,button_figure});
+
 
 set(analog_input,'DataMissedFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
 set(analog_input,'RuntimeErrorFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
-cleanup_object=onCleanup(@()nyedack_cleanup_routine([],[],save_dir,logfile,objects,button_figure));
-set(button_figure,'Visible','on');
+
 % refresh rate of scope determined by TimerPeriod
 
 if preview_enable
@@ -343,7 +343,7 @@ if preview_enable
 	refresh_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',refresh_string,...
 		'Units','Normalized',...
-        'Value',2,...
+        	'Value',min(6,length(refresh_rates)),...
 		'FontSize',11,...
 		'Position',[.15 .05 .35 .1],...
 		'Call',{@nyedack_set_refresh,analog_input,refresh_rates});
@@ -351,6 +351,7 @@ if preview_enable
 	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',voltage_string,...
 		'Units','Normalized',...
+		'Value',min(6,length(voltage_scales))
 		'FontSize',11,...
 		'Position',[.6 .05 .35 .1],...
 		'Call',{@nyedack_set_voltage,voltage_scales});
@@ -381,18 +382,33 @@ if preview_enable
 			[left_edge,bot_edge,width*.8,height*.8],'parent',preview_figure,...
 			'nextplot','add');
         	channel_plot(i)=plot(NaN,NaN,'parent',channel_axis(i));
-        
+       		ylabel(channel_labels{i},'FontSize',11);	
+
 		if i>1
 		    set(channel_axis(i),'xtick',[],'ytick',[]);
 		end
-        
+		
+		if i==nchannels
+			xlabel('Time (s)','FontSize',11);
+		end	 
 	end
 
 	set(analog_input,'TimerPeriod',cur_rate/1e3);
 	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis,channel_plot})
 	set(preview_figure,'Visible','on');
-
+else
+	preview_figure=[];
 end
+
+cleanup_object=onCleanup(@()nyedack_cleanup_routine([],[],save_dir,logfile,objects,button_figure,preview_figure));
+
+quit_button=uicontrol(button_figure,'style','pushbutton',...
+		'String','Quit Acquisition',...
+		'units','normalized',...
+		'FontSize',15,...
+		'Value',0,'Position',[.1 .05 .7 .4],...
+		'call',{@nyedack_early_quit,button_figure,preview_figure});
+set(button_figure,'Visible','on');
 
 start(analog_input)
 

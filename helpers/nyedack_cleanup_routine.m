@@ -1,4 +1,4 @@
-function cleanup_routine(obj,event,save_directory,logfile,objects,figure)
+function cleanup_routine(obj,event,save_directory,logfile,objects,button_figure,preview_figure)
 
 disp('Cleaning up and quitting...');
 
@@ -13,8 +13,15 @@ daqreset;
 disp('Run complete!');
 
 if nargin==6
-	if ishandle(figure)
-		close(figure);
+	if ishandle(button_figure)
+		delete(button_figure);
 	end
 end
+
+if nargin==7 
+	if ishandle(preview_figure)
+		delete(preview_figure);
+	end
+end
+
 

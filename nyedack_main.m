@@ -317,84 +317,75 @@ set(button_figure,'Visible','on');
 
 if preview_enable
 
-    if nchannels<preview_nrows
-        preview_nrows=nchannels;
-    end
-    
-	ncolumns=ceil(nchannels/preview_nrows);
-	preview_figure=figure('Visible','off','Name','Preview v.001a',...
-		'Position',[400,200,...
-        preview_nrows*preview_pxrow,...
-        ncolumns*preview_pxcolumn],...
-        'NumberTitle','off',...
-		'menubar','none','resize','off');
-
-	% plot axes
-
-	channel_axis=[];
-    
-    height=.7/preview_nrows;
-    width=.7/ncolumns;
-    
-	for i=1:nchannels
-		cur_column=floor(i/(preview_nrows+1))+1
-		idx=mod(i,preview_nrows);
-        idx(idx==0)=preview_nrows;
-   
-        left_edge=.2+(cur_column-1)*width;
-        bot_edge=.2+(idx-1)*height;
-   
-		channel_axis(i)=axes('Units','Normalized','Position',...
-			[left_edge,bot_edge,width*.85,height*.85],'parent',preview_figure,...
-            'nextplot','add');
-      
-        if i>1
-            set(channel_axis(i),'xtick',[],'ytick',[]);
-        else
-            set(channel_axis(i),'xtick',xlimits,'ytick',ylimits);
-        end
-        
-        set(channel_axis(i),'ylim',ylimits,'xlim',[0 preview_refresh_rate/1e3]);
-      
+	if nchannels<preview_nrows
+		preview_nrows=nchannels;
 	end
 
 	refresh_string={};
+	voltage_string={};
 
 	for i=1:length(refresh_rates)
 		refresh_string{i}=sprintf('</> %i ms',refresh_rates(i));
 	end
 
 	for i=1:length(voltage_scales)
-		voltage_string{i}=sprintf('+/- %i µV',voltage_scales(i));
+		voltage_string{i}=sprintf('+/- %i ?V',voltage_scales(i));
 	end
 
-	% make the refresh rate a radio button or text edit?
-	
+	ncolumns=ceil(nchannels/preview_nrows);
+	preview_figure=figure('Visible','off','Name','Preview v.001a',...
+		'Position',[400,200,...
+		preview_nrows*preview_pxrow,...
+		ncolumns*preview_pxcolumn],...
+		'NumberTitle','off',...
+		'menubar','none','resize','off');
+
 	refresh_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',refresh_string,...
 		'Units','Normalized',...
 		'FontSize',15,...
-		'Position',[.1 .05 .05 .1],...
+		'Position',[.15 .05 .35 .1],...
 		'Call',{@nyedack_set_refresh,analog_input});
 
 	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',voltage_string,...
 		'Units','Normalized',...
 		'FontSize',15,...
-		'Position',[.3 .05 .05 .1],...
+		'Position',[.6 .05 .35 .1],...
 		'Call',@nyedack_set_voltage);
-    
-    set(preview_figure,'Visible','on');
-    
-    voltage_val=get(voltage_setting,'value');
+
+	voltage_val=get(voltage_setting,'value');
 	preview_voltage_scale=voltage_scales(voltage_val);
-    
+
 	refresh_val=get(refresh_setting,'value');
 	cur_rate=refresh_rates(refresh_val); % rates are in ms
-    preview_refresh_rate=cur_rate;
-    
+	preview_refresh_rate=cur_rate;
+
+	% plot axes
+
+	channel_axis=[];
+
+	height=.65/preview_nrows;
+	width=.65/ncolumns;
+
+	for i=1:nchannels
+		cur_column=floor(i/(preview_nrows+1))+1
+		idx=mod(i,preview_nrows);
+		idx(idx==0)=preview_nrows;
+
+		left_edge=.2+(cur_column-1)*width;
+		bot_edge=.2+(idx-1)*height;
+
+		channel_axis(i)=axes('Units','Normalized','Position',...
+			[left_edge,bot_edge,width*.8,height*.8],'parent',preview_figure,...
+			'nextplot','add');
+	end
+
+
+
 	set(analog_input,'TimerPeriod',cur_rate/1e3);
 	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis})
+	set(preview_figure,'Visible','on');
 
 end
 
@@ -410,7 +401,7 @@ set(status_text,'string','Status:  running','ForegroundColor','g');
 
 while now<datenum(rec_datevec)
 	if ~ishandle(button_figure), break; end
-    	pause(1e-3);
+	pause(1e-3);
 end
 
 % if everything worked, copy the finish time and wrap up

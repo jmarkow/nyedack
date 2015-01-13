@@ -87,7 +87,7 @@ base_dir=fullfile(pwd,'nidaq');
 fs=40e3; % sampling frequency (in Hz)
 note='';
 save_freq=60; % save frequency (in s)
-stop_time=[inf 0 0 0 ]; % when to stop recording
+stop_time=[100 0 0 0 ]; % when to stop recording
 in_device='dev2';
 out_device='dev2';
 folder_format='yyyy-mm-dd';
@@ -164,6 +164,9 @@ if length(daqs)>0
 	delete(daqs);
 end
 
+save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
+if ~exist(save_dir,'dir'), mkdir(save_dir); end
+
 logfile=fopen(fullfile(save_dir,'..','log.txt'),'w');
 fprintf(logfile,'Run started at %s\n\n',datestr(now));
 fprintf(logfile,[note '\n']);
@@ -174,14 +177,8 @@ fprintf(logfile,'Sampling rate:  %g\nChannels=[',actualrate);
 for i=1:length(INCHANNELS)
 	fprintf(logfile,' %g ',INCHANNELS(i));
 end
+
 fprintf(logfile,']\n\n');
-
-% current save_dir can store logfile
-
-save_dir=fullfile(base_dir,datestr(now,folder_format),'mat');
-
-if ~exist(save_dir,'dir'), mkdir(save_dir); end
-
 
 % open the analog input object
 
@@ -241,7 +238,7 @@ end
 % start the analog input object
 
 set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
-set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,save_dir,logfile,actualrate});
+set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,base_dir,folder_format,out_dir,logfile,actualrate});
 
 % this may be a kloodge, but keep attempting to record!!!
 
@@ -325,7 +322,7 @@ if preview_enable
 		'String',refresh_string,...
 		'Units','Normalized',...
 		'FontSize',15,...
-		'Position',[.1 .05 .05 .1],..
+		'Position',[.1 .05 .05 .1],...
 		'Call',@nyedack_set_refresh);
 
 	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...

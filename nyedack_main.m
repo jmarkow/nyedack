@@ -164,21 +164,6 @@ if length(daqs)>0
 	delete(daqs);
 end
 
-save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
-if ~exist(save_dir,'dir'), mkdir(save_dir); end
-
-logfile=fopen(fullfile(save_dir,'..','log.txt'),'w');
-fprintf(logfile,'Run started at %s\n\n',datestr(now));
-fprintf(logfile,[note '\n']);
-fprintf(logfile,'User specified save frequency: %g minutes\n',save_fs/60);
-fprintf(logfile,'Recording until: %s\n',datestr(rec_datevec));
-fprintf(logfile,'Sampling rate:  %g\nChannels=[',actualrate);
-
-for i=1:length(INCHANNELS)
-	fprintf(logfile,' %g ',INCHANNELS(i));
-end
-
-fprintf(logfile,']\n\n');
 
 % open the analog input object
 
@@ -198,6 +183,23 @@ end
 set(analog_input,'TriggerType','Immediate')
 recording_duration=save_freq*actualrate;
 set(analog_input,'SamplesPerTrigger',inf)
+
+save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
+if ~exist(save_dir,'dir'), mkdir(save_dir); end
+
+logfile=fopen(fullfile(save_dir,'..','log.txt'),'w');
+fprintf(logfile,'Run started at %s\n\n',datestr(now));
+fprintf(logfile,[note '\n']);
+fprintf(logfile,'User specified save frequency: %g minutes\n',save_freq/60);
+fprintf(logfile,'Recording until: %s\n',datestr(rec_datevec));
+fprintf(logfile,'Sampling rate:  %g\nChannels=[',actualrate);
+
+for i=1:length(INCHANNELS)
+	fprintf(logfile,' %g ',INCHANNELS(i));
+end
+
+fprintf(logfile,']\n\n');
+
 
 % set up output
 

@@ -1,9 +1,9 @@
-function batch_record(CHANNELS,OUTPUT,stop_time,save_freq,note,fs,base_dir,PREVIEW,restarts)
+function batch_record(INCHANNELS,OUTPUT,varargin)
 %
 %
-% batch_record(CHANNELS,stop_time,save_freq,note,fs,base_dir,PREVIEW)
+% batch_record(INCHANNELS,stop_time,save_freq,note,fs,base_dir,PREVIEW)
 %
-% CHANNELS
+% INCHANNELS
 % vector of the channel(s) to record from (default [0])
 %
 %
@@ -78,7 +78,7 @@ function batch_record(CHANNELS,OUTPUT,stop_time,save_freq,note,fs,base_dir,PREVI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PARAMETER COLLECTION %%%%%%%%%%%%%%%%%
 
 if nargin<2 | isempty(OUTPUT), OUTPUT=[]; end
-if nargin<1 | isempty(CHANNELS), CHANNELS=0; end
+if nargin<1 | isempty(INCHANNELS), INCHANNELS=0; end
 
 nparams=length(varargin);
 
@@ -92,6 +92,11 @@ in_device='dev2';
 out_device='dev2';
 folder_format='yyyy-mm-dd';
 out_dir='mat';
+channel_labels={};
+preview_enable=0;
+preview_nrows=5;
+preview_pxrow=150;
+preview_pxcolumn=300;
 
 if mod(nparams,2)>0
 	error('Parameters must be specified as parameter/value pairs!');
@@ -117,9 +122,22 @@ for i=1:2:nparams
 			folder_format=varargin{i+1};
 		case 'out_dir'
 			out_dir=varargin{i+1};
+		case 'channel_labels'
+			channel_labels=varargin{i+1};
+		case 'preview_enable'
+			preview_enable=varargin{i+1};
+		case 'preview_nrows'
+			preview_nrows=varargin{i+1};
+		case 'preview_pxrow'
+			preview_pxrow=varargin{i+1};
+		case 'preview_pxcolumn'
+			preview_pxcolumn=varargin{i+1};
 		otherwise
 	end
 end
+
+refresh_rates=[ 10 20 50 100 200 500 1e3 2e3 5e3 ];
+voltage_scales=[ 50 100 200 500 1e3 2e3 5e3 10e3 ];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: finish save_directory creation
@@ -137,10 +155,7 @@ sprintf('Will save every %g minutes\n',save_freq/60);
 
 % create the necessary directories for dumping the data
 
-day=datestr(now,'dd');
-month=datestr(now,'mm');
-year=datestr(now,'yyyy');
-
+nchannels=length(INCHANNELS);
 start_time=([datestr(now,'HHMMSS')]);
 
 daqs=daqfind;
@@ -156,8 +171,8 @@ fprintf(logfile,'User specified save frequency: %g minutes\n',save_fs/60);
 fprintf(logfile,'Recording until: %s\n',datestr(rec_datevec));
 fprintf(logfile,'Sampling rate:  %g\nChannels=[',actualrate);
 
-for i=1:length(CHANNELS)
-	fprintf(logfile,' %g ',CHANNELS(i));
+for i=1:length(INCHANNELS)
+	fprintf(logfile,' %g ',INCHANNELS(i));
 end
 fprintf(logfile,']\n\n');
 
@@ -172,7 +187,7 @@ if ~exist(save_dir,'dir'), mkdir(save_dir); end
 
 analog_input = analoginput('nidaq',in_device);
 set(analog_input,'InputType','SingleEnded');
-ch=addchannel(analog_input,CHANNELS);
+ch=addchannel(analog_input,INCHANNELS);
 actualrate=setverify(analog_input,'SampleRate',fs);
 
 % check to see if the actual sampling rate meets our specs, otherwise bail
@@ -216,7 +231,7 @@ if ~isempty(OUTPUT)
 
 		set(analog_output,'TriggerType','Manual');
 		set(analog_output,'TimerPeriod',OUTPUT.interval);
-		set(analog_output,'TimerFcn',{@output_data,logfile,OUTPUT.data});
+		set(analog_output,'TimerFcn',{@nyedack_output_data,logfile,OUTPUT.data});
 	end
 
 	putdata(analog_output,OUTPUT.data)
@@ -226,7 +241,7 @@ end
 % start the analog input object
 
 set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
-set(analog_input,'SamplesAcquiredFcn',{@dump_data,save_dir,logfile,actualrate});
+set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,save_dir,logfile,actualrate});
 
 % this may be a kloodge, but keep attempting to record!!!
 
@@ -236,7 +251,11 @@ if ~isempty(OUTPUT)
 	object{2}=analog_output;
 end
 
-button_figure=figure('Visible','on','Name',['Push button v.001a'],...
+% record until we reach the stopping time or the quit button is pressed
+% rudimentary set of buttons to pause, resume or quit
+% perhaps add a button for manual triggering of the output for testing
+
+button_figure=figure('Visible','off','Name',['Push button v.001a'],...
 		'Position',[200,200,600,500],'NumberTitle','off',...
 		'menubar','none','resize','off');
 status_text=uicontrol(button_figure,'style','text',...
@@ -258,18 +277,67 @@ start_button=uicontrol(button_figure,'style','pushbutton',...
 		'Value',0,'Position',[.5 .5 .3 .3],...
 		'Enable','off');
 
-set(stop_button,'call',{@stop_routine,logfile,objects,status_text,start_button,stop_button});
-set(start_button,'call',{@start_routine,logfile,objects,status_text,start_button,stop_button});
+set(stop_button,'call',{@nyedack_stop_routine,logfile,objects,status_text,start_button,stop_button});
+set(start_button,'call',{@nyedack_start_routine,logfile,objects,status_text,start_button,stop_button});
 quit_button=uicontrol(button_figure,'style','pushbutton',...
 		'String','Quit Acquisition',...
 		'units','normalized',...
 		'FontSize',15,...
 		'Value',0,'Position',[.1 .05 .7 .4],...
-		'call',{@early_quit,button_figure});
+		'call',{@nyedack_early_quit,button_figure});
 
-set(analog_input,'DataMissedFcn',{@restart_routine,logfile,objects,status_text,start_button,stop_button});
-set(analog_input,'RuntimeErrorFcn',{@restart_routine,logfile,objects,status_text,start_button,stop_button});
-cleanup_object=onCleanup(@()cleanup_routine([],[],save_dir,logfile,objects,button_figure));
+set(analog_input,'DataMissedFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
+set(analog_input,'RuntimeErrorFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
+cleanup_object=onCleanup(@()nyedack_cleanup_routine([],[],save_dir,logfile,objects,button_figure));
+set(button_figure,'Visible','on');
+% refresh rate of scope determined by TimerPeriod
+
+if preview_enable
+
+	ncolumns=ceil(nchannels/nrows);
+
+	preview_figure=figure('Visible','off','Name','Preview v.001a',...
+		'Position',[400,200,nrows*preview_pxrow,ncolumns*preview_pxcolumn],'NumberTitle','off',...
+		'menubar','none','resize','off');
+
+	% plot axes
+
+	channel_axis=[];
+	for i=1:length(nchannels)
+		cur_column=floor(i/nrows);
+		idx=rem(i/nrows)+1;
+		channel_axis(i)=axes('Units','Normalized','Position',[.1,.1,(1/nrows)*idx,(1/ncolumns)*cur_column],'parent',preview_figure);
+	end
+
+	refresh_string={};
+
+	for i=1:length(refresh_rates)
+		refresh_string{i}=sprintf('</> %i ms',refresh_rates(i));
+	end
+
+	for i=1:length(voltage_scales)
+		voltage_string{i}=sprintf('+/- %i µV',voltage_scales(i));
+	end
+
+	% make the refresh rate a radio button or text edit?
+	
+	refresh_setting=uicontrol(preview_figure,'Style','popupmenu',...
+		'String',refresh_string,...
+		'Units','Normalized',...
+		'FontSize',15,...
+		'Position',[.1 .05 .05 .1],..
+		'Call',@nyedack_set_refresh);
+
+	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
+		'String',voltage_string,...
+		'Units','Normalized',...
+		'FontSize',15,...
+		'Position',[.3 .05 .05 .1],...
+		'Call',@nyedack_set_voltage);
+
+end
+
+
 
 start(analog_input)
 
@@ -277,16 +345,7 @@ if ~isempty(OUTPUT)
 	start(analog_output);
 end
 
-
 set(status_text,'string','Status:  running','ForegroundColor','g');
-
-
-% record until we reach the stopping time or the quit button is pressed
-
-% rudimentary set of buttons to pause, resume or quit
-
-% perhaps add a button for manual triggering of the output for testing
-
 
 % pause for a millisecond
 
@@ -300,8 +359,3 @@ end
 if exist('PREVIEW','var') && PREVIEW.enable
 	close(preview_window)
 end
-
-end
-
-
-

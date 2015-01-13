@@ -86,7 +86,7 @@ if nargin<1 | isempty(INCHANNELS), INCHANNELS=0; end
 nparams=length(varargin);
 
 restarts=0;
-base_dir=fullfile(pwd,'nidaq');
+base_dir='nidaq';
 fs=40e3; % sampling frequency (in Hz)
 note='';
 save_freq=60; % save frequency (in s)
@@ -167,13 +167,9 @@ sprintf('Will save every %g minutes\n',save_freq/60);
 nchannels=length(INCHANNELS);
 nlabels=length(channel_labels);
 
-nchannels-nlabels
-
 for i=nlabels+1:nchannels
 	channel_labels{i}=sprintf('CH %i',i);
 end
-
-
 
 start_time=([datestr(now,'HHMMSS')]);
 
@@ -218,7 +214,7 @@ counter=1;
 basename=logfile_name;
 
 while nameflag
-	logfile_name=sprintf('%s_%i.txt',basename,counter);
+	logfile_name=sprintf('%s_%i',basename,counter);
 	if exist(logfile_name,'file')
 		nameflag=1;
 		counter=counter+1;
@@ -227,7 +223,7 @@ while nameflag
 	end
 end
 
-logfile=fopen(logfile_name,'w');
+logfile=fopen([ logfile_name '.txt' ],'w');
 fprintf(logfile,'Run started at %s\n\n',datestr(now));
 fprintf(logfile,[note '\n']);
 fprintf(logfile,'User specified save frequency: %g minutes\n',save_freq/60);
@@ -384,12 +380,12 @@ if preview_enable
 	h_spacing=.02;
 
 	for i=1:nchannels
-		cur_column=floor(i/(preview_nrows+1))+1
+		cur_column=floor(i/(preview_nrows+1))+1;
 		idx=mod(i,preview_nrows);
 		idx(idx==0)=preview_nrows;
 
-		left_edge=.15+(cur_column-1)*width+(cur_column-1)*w_spacing
-		bot_edge=.3+(idx-1)*height+(idx-1)*h_spacing
+		left_edge=.15+(cur_column-1)*width+(cur_column-1)*w_spacing;
+		bot_edge=.3+(idx-1)*height+(idx-1)*h_spacing;
 
 		channel_axis(i)=axes('Units','Normalized','Position',...
 			[left_edge,bot_edge,width,height],'parent',preview_figure,...

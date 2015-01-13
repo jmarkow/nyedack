@@ -314,10 +314,16 @@ set(button_figure,'Visible','on');
 
 if preview_enable
 
-	ncolumns=ceil(nchannels/nrows);
-
+	ncolumns=ceil(nchannels/preview_nrows);
+    preview_nrows
+    ncolumns
+    preview_pxrow
+    preview_pxcolumn
 	preview_figure=figure('Visible','off','Name','Preview v.001a',...
-		'Position',[400,200,nrows*preview_pxrow,ncolumns*preview_pxcolumn],'NumberTitle','off',...
+		'Position',[400,200,...
+        preview_nrows*preview_pxrow,...
+        ncolumns*preview_pxcolumn],...
+        'NumberTitle','off',...
 		'menubar','none','resize','off');
 
 	% plot axes
@@ -329,6 +335,8 @@ if preview_enable
 		channel_axis(i)=axes('Units','Normalized','Position',...
 			[(.9/ncolumns)*cur_column,1-((.9/nrows)*idx),...
 			(.8/nrows),(.8/ncolumns)],'parent',preview_figure);
+		cur_column=floor(i/preview_nrows)+1;
+		idx=rem(i,preview_nrows)+1;
 	end
 
 	refresh_string={};
@@ -356,6 +364,8 @@ if preview_enable
 		'FontSize',15,...
 		'Position',[.3 .05 .05 .1],...
 		'Call',@nyedack_set_voltage);
+    
+    set(preview_figure,'Visible','on');
 
 	global preview_voltage_scale;
 	voltage_val=get(voltage_setting,'value');

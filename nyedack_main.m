@@ -379,7 +379,9 @@ if preview_enable
 		channel_axis(i)=axes('Units','Normalized','Position',...
 			[left_edge,bot_edge,width*.8,height*.8],'parent',preview_figure,...
 			'nextplot','add');
-        
+
+       
+
         if i>1
             set(channel_axis(i),'xtick',[],'ytick',[]);
         end

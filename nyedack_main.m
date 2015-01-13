@@ -77,6 +77,9 @@ function batch_record(INCHANNELS,OUTPUT,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PARAMETER COLLECTION %%%%%%%%%%%%%%%%%
 
+global preview_voltage_scale;
+global preview_refresh_rate;
+
 if nargin<2 | isempty(OUTPUT), OUTPUT=[]; end
 if nargin<1 | isempty(INCHANNELS), INCHANNELS=0; end
 
@@ -314,11 +317,11 @@ set(button_figure,'Visible','on');
 
 if preview_enable
 
+    if nchannels<preview_nrows
+        preview_nrows=nchannels;
+    end
+    
 	ncolumns=ceil(nchannels/preview_nrows);
-    preview_nrows
-    ncolumns
-    preview_pxrow
-    preview_pxcolumn
 	preview_figure=figure('Visible','off','Name','Preview v.001a',...
 		'Position',[400,200,...
         preview_nrows*preview_pxrow,...
@@ -329,13 +332,30 @@ if preview_enable
 	% plot axes
 
 	channel_axis=[];
-	for i=1:length(nchannels)
-		cur_column=floor(i/preview_nrows)+1;
-		idx=rem(i,preview_nrows)+1;
+    
+    height=.7/preview_nrows;
+    width=.7/ncolumns;
+    
+	for i=1:nchannels
+		cur_column=floor(i/(preview_nrows+1))+1
+		idx=mod(i,preview_nrows);
+        idx(idx==0)=preview_nrows;
+   
+        left_edge=.2+(cur_column-1)*width;
+        bot_edge=.2+(idx-1)*height;
+   
 		channel_axis(i)=axes('Units','Normalized','Position',...
-			[(.9/ncolumns)*cur_column,1-((.9/preview_nrows)*idx),...
-			(.8/preview_nrows),(.8/ncolumns)],'parent',preview_figure);
-
+			[left_edge,bot_edge,width*.85,height*.85],'parent',preview_figure,...
+            'nextplot','add');
+      
+        if i>1
+            set(channel_axis(i),'xtick',[],'ytick',[]);
+        else
+            set(channel_axis(i),'xtick',xlimits,'ytick',ylimits);
+        end
+        
+        set(channel_axis(i),'ylim',ylimits,'xlim',[0 preview_refresh_rate/1e3]);
+      
 	end
 
 	refresh_string={};
@@ -345,7 +365,7 @@ if preview_enable
 	end
 
 	for i=1:length(voltage_scales)
-		voltage_string{i}=sprintf('+/- %i ÂµV',voltage_scales(i));
+		voltage_string{i}=sprintf('+/- %i µV',voltage_scales(i));
 	end
 
 	% make the refresh rate a radio button or text edit?
@@ -365,20 +385,18 @@ if preview_enable
 		'Call',@nyedack_set_voltage);
     
     set(preview_figure,'Visible','on');
-
-	global preview_voltage_scale;
-	voltage_val=get(voltage_setting,'value');
+    
+    voltage_val=get(voltage_setting,'value');
 	preview_voltage_scale=voltage_scales(voltage_val);
-
+    
 	refresh_val=get(refresh_setting,'value');
-	cur_rate=refresh_rates(refresh_val)/1e3; % rates are in ms
-
-	set(analog_input,'TimerPeriod',cur_rate);
+	cur_rate=refresh_rates(refresh_val); % rates are in ms
+    preview_refresh_rate=cur_rate;
+    
+	set(analog_input,'TimerPeriod',cur_rate/1e3);
 	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis})
 
 end
-
-
 
 start(analog_input)
 

@@ -140,7 +140,7 @@ for i=1:2:nparams
 end
 
 refresh_rates=[ 10 20 50 100 200 500 1e3 2e3 5e3 ];
-voltage_scales=[ 50 100 200 500 1e3 2e3 5e3 10e3 ];
+voltage_scales=[ 1 5 1e2 5e2 1e3 5e3 1e4 5e4 1e5 5e5 1e6 5e6 1e7 5e7 1e8 5e8 ];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: finish save_directory creation
@@ -329,7 +329,7 @@ if preview_enable
 	end
 
 	for i=1:length(voltage_scales)
-		voltage_string{i}=sprintf('+/- %i ?V',voltage_scales(i));
+		voltage_string{i}=sprintf('+/- %.0e uV',voltage_scales(i));
 	end
 
 	ncolumns=ceil(nchannels/preview_nrows);
@@ -343,16 +343,16 @@ if preview_enable
 	refresh_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',refresh_string,...
 		'Units','Normalized',...
-		'FontSize',15,...
+		'FontSize',11,...
 		'Position',[.15 .05 .35 .1],...
 		'Call',{@nyedack_set_refresh,analog_input});
 
 	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',voltage_string,...
 		'Units','Normalized',...
-		'FontSize',15,...
+		'FontSize',11,...
 		'Position',[.6 .05 .35 .1],...
-		'Call',@nyedack_set_voltage);
+		'Call',{@nyedack_set_voltage,voltage_scales});
 
 	voltage_val=get(voltage_setting,'value');
 	preview_voltage_scale=voltage_scales(voltage_val);
@@ -366,7 +366,7 @@ if preview_enable
 	channel_axis=[];
 
 	height=.65/preview_nrows;
-	width=.65/ncolumns;
+	width=.8/ncolumns;
 
 	for i=1:nchannels
 		cur_column=floor(i/(preview_nrows+1))+1
@@ -374,11 +374,16 @@ if preview_enable
 		idx(idx==0)=preview_nrows;
 
 		left_edge=.2+(cur_column-1)*width;
-		bot_edge=.2+(idx-1)*height;
+		bot_edge=.25+(idx-1)*height;
 
 		channel_axis(i)=axes('Units','Normalized','Position',...
 			[left_edge,bot_edge,width*.8,height*.8],'parent',preview_figure,...
 			'nextplot','add');
+        
+        if i>1
+            set(channel_axis(i),'xtick',[],'ytick',[]);
+        end
+        
 	end
 
 

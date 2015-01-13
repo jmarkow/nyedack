@@ -330,13 +330,12 @@ if preview_enable
 
 	channel_axis=[];
 	for i=1:length(nchannels)
-		cur_column=floor(i/nrows);
-		idx=rem(i/nrows)+1;
-		channel_axis(i)=axes('Units','Normalized','Position',...
-			[(.9/ncolumns)*cur_column,1-((.9/nrows)*idx),...
-			(.8/nrows),(.8/ncolumns)],'parent',preview_figure);
 		cur_column=floor(i/preview_nrows)+1;
 		idx=rem(i,preview_nrows)+1;
+		channel_axis(i)=axes('Units','Normalized','Position',...
+			[(.9/ncolumns)*cur_column,1-((.9/preview_nrows)*idx),...
+			(.8/preview_nrows),(.8/ncolumns)],'parent',preview_figure);
+
 	end
 
 	refresh_string={};
@@ -375,7 +374,7 @@ if preview_enable
 	cur_rate=refresh_rates(refresh_val)/1e3; % rates are in ms
 
 	set(analog_input,'TimerPeriod',cur_rate);
-	set(analog_input,'TimerFcn',@{nyedack_preview_data,channel_axis})
+	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis})
 
 end
 

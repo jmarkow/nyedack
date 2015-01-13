@@ -1,4 +1,4 @@
-function dump_data(obj,event,save_dir,folder_format,out_dir,logfile,actualrate,channel_labels)
+function dump_data(obj,event,save_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels)
 
 % basically, a circular buffer is used!
 
@@ -8,7 +8,7 @@ function dump_data(obj,event,save_dir,folder_format,out_dir,logfile,actualrate,c
 
 try
 	[data.voltage,data.time,data.start_time]=getdata(obj,obj.SamplesAvailable);
-	datafile_name=[ 'data_' datestr(now,30) '.mat' ];
+	datafile_name=[ file_basename '_' datestr(now,file_format) '.mat' ];
 	
 	data.fs=actualrate;
 	data.labels=channel_labels;

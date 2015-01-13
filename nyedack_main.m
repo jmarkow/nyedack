@@ -161,9 +161,13 @@ sprintf('Will save every %g minutes\n',save_freq/60);
 nchannels=length(INCHANNELS);
 nlabels=length(channel_labels);
 
-for i=(nchannels-nlabels)+1:nchannels
+nchannels-nlabels
+
+for i=nlabels+1:nchannels
 	channel_labels{i}=sprintf('CH %i',i);
 end
+
+
 
 start_time=([datestr(now,'HHMMSS')]);
 
@@ -196,9 +200,9 @@ set(analog_input,'SamplesPerTrigger',inf)
 save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
 if ~exist(save_dir,'dir'), mkdir(save_dir); end
 
-logfile_name=fullfile(save_dir,'..','log.txt');
+logfile_name=fullfile(save_dir,'..','log');
 
-if exist(logfile_name,'file')
+if exist([ logfile_name '.txt' ],'file')
 	nameflag=1;
 else
 	nameflag=0;
@@ -208,7 +212,7 @@ counter=1;
 basename=logfile_name;
 
 while nameflag
-	logfile_name=sprintf('%s_%i',basename,counter);
+	logfile_name=sprintf('%s_%i.txt',basename,counter);
 	if exist(logfile_name,'file')
 		nameflag=1;
 		counter=counter+1;
@@ -217,7 +221,7 @@ while nameflag
 	end
 end
 
-logfile=fopen(fullfile(save_dir,'..','log.txt'),'w');
+logfile=fopen(logfile_name,'w');
 fprintf(logfile,'Run started at %s\n\n',datestr(now));
 fprintf(logfile,[note '\n']);
 fprintf(logfile,'User specified save frequency: %g minutes\n',save_freq/60);
@@ -334,11 +338,11 @@ if preview_enable
 
 	ncolumns=ceil(nchannels/preview_nrows);
 	preview_figure=figure('Visible','off','Name','Preview v.001a',...
-		'Position',[400,200,...
+		'Position',[50,50,...
 		preview_nrows*preview_pxrow,...
 		ncolumns*preview_pxcolumn],...
 		'NumberTitle','off',...
-		'menubar','none','resize','off');
+		'menubar','none','resize','on');
 
 	refresh_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',refresh_string,...
@@ -351,7 +355,7 @@ if preview_enable
 	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',voltage_string,...
 		'Units','Normalized',...
-		'Value',min(6,length(voltage_scales))
+		'Value',min(6,length(voltage_scales)),...
 		'FontSize',11,...
 		'Position',[.6 .05 .35 .1],...
 		'Call',{@nyedack_set_voltage,voltage_scales});
@@ -367,30 +371,36 @@ if preview_enable
 
 	channel_axis=[];
 
-	height=.65/preview_nrows;
+	height=.6/preview_nrows;
 	width=.8/ncolumns;
-
+    w_spacing=.05;
+    h_spacing=.02;
+    ncolumns
+    preview_nrows
+    
 	for i=1:nchannels
 		cur_column=floor(i/(preview_nrows+1))+1
 		idx=mod(i,preview_nrows);
 		idx(idx==0)=preview_nrows;
-
-		left_edge=.2+(cur_column-1)*width;
-		bot_edge=.25+(idx-1)*height;
+        
+		left_edge=.15+(cur_column-1)*width+(cur_column-1)*w_spacing
+		bot_edge=.3+(idx-1)*height+(idx-1)*h_spacing
 
 		channel_axis(i)=axes('Units','Normalized','Position',...
-			[left_edge,bot_edge,width*.8,height*.8],'parent',preview_figure,...
+			[left_edge,bot_edge,width,height],'parent',preview_figure,...
 			'nextplot','add');
-        	channel_plot(i)=plot(NaN,NaN,'parent',channel_axis(i));
-       		ylabel(channel_labels{i},'FontSize',11);	
+        channel_plot(i)=plot(NaN,NaN,'parent',channel_axis(i));
+       	ylabel(channel_labels{i},'FontSize',9,'parent',channel_axis(i));	
 
 		if i>1
 		    set(channel_axis(i),'xtick',[],'ytick',[]);
-		end
-		
-		if i==nchannels
-			xlabel('Time (s)','FontSize',11);
-		end	 
+        end
+        
+		if i==1
+			xlabel('Time (s)','FontSize',11,'parent',channel_axis(i));
+            set(channel_axis(i),'ytick',[]);
+        end
+        
 	end
 
 	set(analog_input,'TimerPeriod',cur_rate/1e3);

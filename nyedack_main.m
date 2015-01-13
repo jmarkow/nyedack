@@ -293,19 +293,26 @@ set(button_figure,'Visible','on');
 
 if preview_enable
 
-	ncolumns=ceil(nchannels/nrows);
-
+	ncolumns=ceil(nchannels/preview_nrows);
+    preview_nrows
+    ncolumns
+    preview_pxrow
+    preview_pxcolumn
 	preview_figure=figure('Visible','off','Name','Preview v.001a',...
-		'Position',[400,200,nrows*preview_pxrow,ncolumns*preview_pxcolumn],'NumberTitle','off',...
+		'Position',[400,200,...
+        preview_nrows*preview_pxrow,...
+        ncolumns*preview_pxcolumn],...
+        'NumberTitle','off',...
 		'menubar','none','resize','off');
 
 	% plot axes
 
 	channel_axis=[];
 	for i=1:length(nchannels)
-		cur_column=floor(i/nrows);
-		idx=rem(i/nrows)+1;
-		channel_axis(i)=axes('Units','Normalized','Position',[.1,.1,(1/nrows)*idx,(1/ncolumns)*cur_column],'parent',preview_figure);
+		cur_column=floor(i/preview_nrows)+1;
+		idx=rem(i,preview_nrows)+1;
+        idx
+		channel_axis(i)=axes('Units','Normalized','Position',[.1,.1,(1/preview_nrows)*idx,(1/ncolumns)*cur_column],'parent',preview_figure);
 	end
 
 	refresh_string={};
@@ -333,6 +340,8 @@ if preview_enable
 		'FontSize',15,...
 		'Position',[.3 .05 .05 .1],...
 		'Call',@nyedack_set_voltage);
+    
+    set(preview_figure,'Visible','on');
 
 end
 

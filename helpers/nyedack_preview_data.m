@@ -16,7 +16,7 @@ try
 	[data.voltage,data.time,data.start_time]=getdata(obj,obj.SamplesAvailable);
     	data.time=data.time-data.time(1);
 	for i=1:length(channel_axis)
-		plot(data.time-data.time(1),data.voltage(:,i),'parent',channel_axis(i));
+		set(channel_axis(i),'xdata',data.time-data.time(1),'ydata',data.voltage(:,i));
 
 		old_xlimits=get(channel_axis(i),'xlim');
 		old_ylimits=get(channel_axis(i),'ylim');

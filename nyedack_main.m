@@ -345,7 +345,7 @@ if preview_enable
 		'Units','Normalized',...
 		'FontSize',11,...
 		'Position',[.15 .05 .35 .1],...
-		'Call',{@nyedack_set_refresh,analog_input});
+		'Call',{@nyedack_set_refresh,analog_input,refresh_rates});
 
 	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',voltage_string,...
@@ -385,8 +385,6 @@ if preview_enable
         end
         
 	end
-
-
 
 	set(analog_input,'TimerPeriod',cur_rate/1e3);
 	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis})

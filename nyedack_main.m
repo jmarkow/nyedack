@@ -343,6 +343,7 @@ if preview_enable
 	refresh_setting=uicontrol(preview_figure,'Style','popupmenu',...
 		'String',refresh_string,...
 		'Units','Normalized',...
+        'Value',2,...
 		'FontSize',11,...
 		'Position',[.15 .05 .35 .1],...
 		'Call',{@nyedack_set_refresh,analog_input,refresh_rates});
@@ -379,17 +380,16 @@ if preview_enable
 		channel_axis(i)=axes('Units','Normalized','Position',...
 			[left_edge,bot_edge,width*.8,height*.8],'parent',preview_figure,...
 			'nextplot','add');
-
-       
-
-        if i>1
-            set(channel_axis(i),'xtick',[],'ytick',[]);
-        end
+        	channel_plot(i)=plot(NaN,NaN,'parent',channel_axis(i));
+        
+		if i>1
+		    set(channel_axis(i),'xtick',[],'ytick',[]);
+		end
         
 	end
 
 	set(analog_input,'TimerPeriod',cur_rate/1e3);
-	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis})
+	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis,channel_plot})
 	set(preview_figure,'Visible','on');
 
 end
@@ -412,5 +412,5 @@ end
 % if everything worked, copy the finish time and wrap up
 
 if exist('PREVIEW','var') && PREVIEW.enable
-	close(preview_window)
+	close(preview_figure)
 end

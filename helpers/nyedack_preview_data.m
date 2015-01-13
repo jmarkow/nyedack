@@ -1,4 +1,4 @@
-function nyedack_preview_data(obj,event,channel_axis)
+function nyedack_preview_data(obj,event,channel_axis,channel_plot)
 
 % basically, a circular buffer is used!
 
@@ -16,8 +16,7 @@ try
 	[data.voltage,data.time,data.start_time]=getdata(obj,obj.SamplesAvailable);
     	data.time=data.time-data.time(1);
 	for i=1:length(channel_axis)
-		set(channel_axis(i),'xdata',data.time-data.time(1),'ydata',data.voltage(:,i));
-
+		set(channel_plot(i),'XData',data.time-data.time(1),'YData',data.voltage(:,i));
 		old_xlimits=get(channel_axis(i),'xlim');
 		old_ylimits=get(channel_axis(i),'ylim');
 
@@ -32,6 +31,7 @@ try
 		drawnow;
 	end
 catch 
+    warning('No samples found, consider decreasing refresh rate');
     flushdata(obj);	
 end
 

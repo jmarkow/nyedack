@@ -314,7 +314,6 @@ start_button=uicontrol(button_figure,'style','pushbutton',...
 set(stop_button,'call',{@nyedack_stop_routine,logfile,objects,status_text,start_button,stop_button});
 set(start_button,'call',{@nyedack_start_routine,logfile,objects,status_text,start_button,stop_button});
 
-
 set(analog_input,'DataMissedFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
 set(analog_input,'RuntimeErrorFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
 
@@ -403,7 +402,7 @@ if preview_enable
 	end
 
 	set(analog_input,'TimerPeriod',cur_rate/1e3);
-	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis,channel_plot})
+	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis,channel_plot,actualrate})
 	set(preview_figure,'Visible','on');
 else
 	preview_figure=[];

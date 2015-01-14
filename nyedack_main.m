@@ -104,7 +104,6 @@ preview_pxcolumn=300;
 preview_dcoffset=1; % remove DC offset for preview?
 
 file_basename='data';
-recording_buffer=.1;
 polling_rate=.05; % how often to poll for data (in s)? only used with preview off
 		  % otherwise this is tied to the refresh rate of the GUI
 
@@ -148,6 +147,8 @@ for i=1:2:nparams
 			file_format=varargin{i+1};
 		case 'polling_rate'
 			polling_rate=varargin{i+1};
+		case 'preview_dcoffset'
+			preview_dcoffset=varargin{i+1};
 		otherwise
 	end
 end
@@ -386,7 +387,7 @@ if preview_enable
     ncolumns
     nchannels
 	for i=1:nchannels
-		cur_column=ceil(i/(preview_nrows))
+		cur_column=ceil(i/(preview_nrows));
 		idx=mod(i,preview_nrows);
 		idx(idx==0)=preview_nrows;
 

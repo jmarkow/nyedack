@@ -276,8 +276,6 @@ end
 % start the analog input object
 
 set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
-set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,...
-	base_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels});
 
 % this may be a kloodge, but keep attempting to record!!!
 
@@ -420,6 +418,8 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 	'Value',0,'Position',[.1 .05 .7 .4],...
 	'call',{@nyedack_early_quit,button_figure,preview_figure});
 set(button_figure,'Visible','on');
+set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,...
+	base_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels,preview_figure});
 
 start(analog_input)
 

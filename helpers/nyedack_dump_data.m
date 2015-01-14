@@ -1,4 +1,4 @@
-function dump_data(obj,event,dump_samples,save_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot)
+function dump_data(obj,event,dump_samples,save_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot,dcoffset)
 
 % basically, a circular buffer is used!
 
@@ -21,13 +21,14 @@ if ~isempty(preview_figure) & available_samples<dump_samples & available_samples
 	ylimits=[-preview_voltage_scale/1e6 preview_voltage_scale/1e6];
 	xlimits=[0 preview_refresh_rate/1e3];
 
-	%[data]=peekdata(obj,obj.SamplesAvailable);
 	data=peekdata(obj,refresh_samples);
+
+	if dcoffset
+		data=detrend(data,'constant');
+	end
 
 	% grab latest segment
 
-	%[nsamples,nchannels]=size(data);
-	%data=data(nsamples-refresh_samples+1:nsamples,:);
 	time=[1:refresh_samples]/actualrate;
 
 	for i=1:length(channel_axis)

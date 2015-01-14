@@ -101,8 +101,12 @@ preview_enable=0;
 preview_nrows=5;
 preview_pxrow=150;
 preview_pxcolumn=300;
+preview_dcoffset=1; % remove DC offset for preview?
+
 file_basename='data';
 recording_buffer=.1;
+polling_rate=.05; % how often to poll for data (in s)? only used with preview off
+		  % otherwise this is tied to the refresh rate of the GUI
 
 if mod(nparams,2)>0
 	error('Parameters must be specified as parameter/value pairs!');
@@ -142,6 +146,8 @@ for i=1:2:nparams
 			file_basename=varargin{i+1};
 		case 'file_format'
 			file_format=varargin{i+1};
+		case 'polling_rate'
+			polling_rate=varargin{i+1};
 		otherwise
 	end
 end
@@ -185,6 +191,7 @@ end
 
 analog_input = analoginput('nidaq',in_device);
 set(analog_input,'InputType','SingleEnded');
+
 ch=addchannel(analog_input,INCHANNELS);
 actualrate=setverify(analog_input,'SampleRate',fs);
 
@@ -197,7 +204,10 @@ end
 % set the parameters of the analog input object
 
 set(analog_input,'TriggerType','Immediate')
-recording_duration=save_freq*actualrate;
+
+recording_duration=round(save_freq*actualrate);
+polling_duration=round(polling_rate*actualrate);
+
 set(analog_input,'SamplesPerTrigger',inf)
 
 save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
@@ -274,11 +284,7 @@ if ~isempty(OUTPUT)
 
 end
 
-% start the analog input object
-
 %set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
-
-% this may be a kloodge, but keep attempting to record!!!
 
 objects{1}=analog_input;
 
@@ -316,7 +322,7 @@ set(stop_button,'call',{@nyedack_stop_routine,logfile,objects,status_text,start_
 set(start_button,'call',{@nyedack_start_routine,logfile,objects,status_text,start_button,stop_button});
 set(analog_input,'DataMissedFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
 set(analog_input,'RuntimeErrorFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
-set(analog_input,'TimerPeriod',recording_duration);
+set(analog_input,'TimerPeriod',polling_duration);
 
 % refresh rate of scope determined by TimerPeriod
 
@@ -402,12 +408,9 @@ if preview_enable
 
 	end
 
-	if cur_rate/1e3>recording_duration
-		warning('Refresh interval cannot exceed save frequency...');
-	else
-		set(analog_input,'TimerPeriod',cur_rate/1e3);
-	end
+	disp('Note that the card polling rate is set to the refresh rate...');
 
+	set(analog_input,'TimerPeriod',cur_rate/1e3);
 	set(preview_figure,'Visible','on');
 
 else
@@ -427,7 +430,7 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 set(button_figure,'Visible','on');
 set(analog_input,'TimerFcn',{@nyedack_dump_data,...
 	recording_duration,base_dir,folder_format,out_dir,file_basename,file_format,...
-	logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot});
+	logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot,preview_dcoffset});
 
 start(analog_input)
 

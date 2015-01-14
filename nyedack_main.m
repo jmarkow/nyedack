@@ -146,7 +146,7 @@ for i=1:2:nparams
 	end
 end
 
-refresh_rates=[ 100 200 500 1e3 2e3 5e3 ];
+refresh_rates=[ 50 100 200 500 1e3 2e3 5e3 ];
 voltage_scales=[ 1 5 1e2 5e2 1e3 5e3 1e4 5e4 1e5 5e5 1e6 5e6 1e7 5e7 1e8 5e8 ];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

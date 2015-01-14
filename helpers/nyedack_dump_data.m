@@ -22,7 +22,7 @@ if ~isempty(preview_figure) & available_samples<dump_samples & available_samples
 	xlimits=[0 preview_refresh_rate/1e3];
 
 	%[data]=peekdata(obj,obj.SamplesAvailable);
-	data=peakdata(obj,refresh_samples);
+	data=peekdata(obj,refresh_samples);
 
 	% grab latest segment
 

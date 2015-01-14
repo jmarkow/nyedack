@@ -1,4 +1,4 @@
-function dump_data(obj,event,save_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels,preview_figure,dump_samples)
+function dump_data(obj,event,save_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot,dump_samples)
 
 % basically, a circular buffer is used!
 

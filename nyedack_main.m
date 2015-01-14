@@ -412,6 +412,7 @@ if preview_enable
 
 else
 	preview_figure=[];
+    channel_plot=[];
 end
 
 cleanup_object=onCleanup(@()nyedack_cleanup_routine([],[],save_dir,logfile,objects,button_figure,preview_figure));
@@ -426,7 +427,7 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 set(button_figure,'Visible','on');
 set(analog_input,'TimerFcn',{@nyedack_dump_data,...
 	base_dir,folder_format,out_dir,file_basename,file_format,...
-	logfile,actualrate,channel_labels,preview_figure,recording_duration});
+	logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot,recording_duration});
 
 start(analog_input)
 

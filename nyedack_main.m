@@ -102,6 +102,7 @@ preview_nrows=5;
 preview_pxrow=150;
 preview_pxcolumn=300;
 file_basename='data';
+recording_buffer=.1;
 
 if mod(nparams,2)>0
 	error('Parameters must be specified as parameter/value pairs!');
@@ -145,7 +146,7 @@ for i=1:2:nparams
 	end
 end
 
-refresh_rates=[ 10 20 50 100 200 500 1e3 2e3 5e3 ];
+refresh_rates=[ 100 200 500 1e3 2e3 5e3 ];
 voltage_scales=[ 1 5 1e2 5e2 1e3 5e3 1e4 5e4 1e5 5e5 1e6 5e6 1e7 5e7 1e8 5e8 ];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -275,7 +276,7 @@ end
 
 % start the analog input object
 
-set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
+%set(analog_input,'SamplesAcquiredFcnCount',recording_duration);
 
 % this may be a kloodge, but keep attempting to record!!!
 
@@ -313,9 +314,9 @@ start_button=uicontrol(button_figure,'style','pushbutton',...
 
 set(stop_button,'call',{@nyedack_stop_routine,logfile,objects,status_text,start_button,stop_button});
 set(start_button,'call',{@nyedack_start_routine,logfile,objects,status_text,start_button,stop_button});
-
 set(analog_input,'DataMissedFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
 set(analog_input,'RuntimeErrorFcn',{@nyedack_restart_routine,logfile,objects,status_text,start_button,stop_button});
+set(analog_input,'TimerPeriod',recording_duration);
 
 % refresh rate of scope determined by TimerPeriod
 
@@ -401,9 +402,14 @@ if preview_enable
 
 	end
 
-	set(analog_input,'TimerPeriod',cur_rate/1e3);
-	set(analog_input,'TimerFcn',{@nyedack_preview_data,channel_axis,channel_plot,actualrate})
+	if cur_rate/1e3>recording_duration
+		warning('Refresh interval cannot exceed save frequency...');
+	else
+		set(analog_input,'TimerPeriod',cur_rate/1e3);
+	end
+
 	set(preview_figure,'Visible','on');
+
 else
 	preview_figure=[];
 end
@@ -416,9 +422,11 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 	'FontSize',15,...
 	'Value',0,'Position',[.1 .05 .7 .4],...
 	'call',{@nyedack_early_quit,button_figure,preview_figure});
+
 set(button_figure,'Visible','on');
-set(analog_input,'SamplesAcquiredFcn',{@nyedack_dump_data,...
-	base_dir,folder_format,out_dir,file_basename,file_format,logfile,actualrate,channel_labels,preview_figure});
+set(analog_input,'TimerFcn',{@nyedack_dump_data,...
+	base_dir,folder_format,out_dir,file_basename,file_format,...
+	logfile,actualrate,channel_labels,preview_figure,recording_duration});
 
 start(analog_input)
 

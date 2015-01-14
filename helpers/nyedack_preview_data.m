@@ -15,7 +15,7 @@ xlimits=[0 preview_refresh_rate/1e3];
 
 try
 	[data]=peekdata(obj,obj.SamplesAvailable);
-    time=[1:length(data)]/actualrate;
+    	time=[1:length(data)]/actualrate;
 	for i=1:length(channel_axis)
 		set(channel_plot(i),'XData',time,'YData',data(:,i));
 		old_xlimits=get(channel_axis(i),'xlim');

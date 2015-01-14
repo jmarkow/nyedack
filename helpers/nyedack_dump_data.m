@@ -32,7 +32,14 @@ if ~isempty(preview_figure) & available_samples<dump_samples & available_samples
 	time=[1:refresh_samples]/actualrate;
 
 	for i=1:length(channel_axis)
-		set(channel_plot(i),'XData',time,'YData',data(:,i));
+
+        % bail if the figure has been deleted...
+        
+        if ~ishandle(channel_plot(i))
+            return;
+        end
+        
+        set(channel_plot(i),'XData',time,'YData',data(:,i));
 		old_xlimits=get(channel_axis(i),'xlim');
 		old_ylimits=get(channel_axis(i),'ylim');
 

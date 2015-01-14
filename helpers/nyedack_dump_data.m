@@ -12,18 +12,29 @@ global preview_refresh_rate;
 % do we want to preview?
 
 available_samples=obj.SamplesAvailable;
-
+refresh_samples=round((preview_refresh_rate/1e3)*actualrate);
 %%% preview code
 
-if ~isempty(preview_figure) & available_samples<dump_samples
+disp('test')
+available_samples
+dump_samples
 
+if ~isempty(preview_figure) & available_samples<dump_samples & available_samples>refresh_samples
 
 	ylimits=[-preview_voltage_scale/1e6 preview_voltage_scale/1e6];
 	xlimits=[0 preview_refresh_rate/1e3];
 
 	[data]=peekdata(obj,obj.SamplesAvailable);
-    	time=[1:length(data)]/actualrate;
-	for i=1:length(channel_axis)
+    
+    % grab latest segment
+    
+  
+    
+    [nsamples,nchannels]=size(data);
+    data=data(nsamples-refresh_samples+1:nsamples,:);
+    time=[1:refresh_samples]/actualrate;
+	
+    for i=1:length(channel_axis)
 		set(channel_plot(i),'XData',time,'YData',data(:,i));
 		old_xlimits=get(channel_axis(i),'xlim');
 		old_ylimits=get(channel_axis(i),'ylim');
@@ -58,7 +69,8 @@ if available_samples>dump_samples
 		save(fullfile(save_dir,datafile_name),'data');
 		fprintf(logfile,'%s saved successfully at %s\n',fullfile(save_dir,datafile_name),datestr(now));
 		disp([ fullfile(save_dir,datafile_name) ' saved successfully at ' datestr(now) ]);
-	catch
+    catch
+        warning('Could not get data, flushing...');
 		flushdata(obj);
 	end
 end

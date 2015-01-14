@@ -384,8 +384,6 @@ if preview_enable
 	w_spacing=.05;
 	h_spacing=.02;
 
-    ncolumns
-    nchannels
 	for i=1:nchannels
 		cur_column=ceil(i/(preview_nrows));
 		idx=mod(i,preview_nrows);

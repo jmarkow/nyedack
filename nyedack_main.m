@@ -417,6 +417,7 @@ if preview_enable
 else
 	preview_figure=[];
 	channel_plot=[];
+	channel_axis=[];
 end
 
 cleanup_object=onCleanup(@()nyedack_cleanup_routine([],[],save_dir,logfile,objects,button_figure,preview_figure));

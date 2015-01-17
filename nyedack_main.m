@@ -1,11 +1,75 @@
 function nyedack_main(INCHANNELS,OUTPUT,varargin)
+% CLI interface for recording data through the MATLAB legacy interface
 %
+%	nyedack_main(INCHANNELS,OUTPUT,varargin)
 %
+%	INCHANNELS
+%	vector of NIDAQ channels to record from (start from 0)
+%
+%	OUTPUT
+%	structure specifying how to deliver output (leave empty for no output)
+%	
+%	the following may be specified as parameter/value pairs:
+%
+%		fs
+%		data acquisition sampling rate (default: 40e3)
+%
+%		base_dir
+%		base directory for data storage (default: 'nyedack')
+%
+%		note
+%		string containing note to include in data storage log (default: empty)
+%
+%		save_freq
+%		frequency for dumping data to disk from memory (in s, default: 60)
+%
+%		stop_time
+%		time to stop recording (vector in [d h m s] format, default: [100 0 0 0], will record for 100 days)
+%
+%		in_device
+%		input device location (default: 'dev2')
+%
+%		in_device_type (default: 'nidaq')
+%
+%		out_device
+%		output device location (default: 'dev2')
+%
+%		output_device_type
+%		output device type (default: 'nidaq')
+%
+%		folder_format
+%		datestr format for data storage folders (default: 'yyyy-mm-dd')
+%
+%		file_format
+%		datestr format for data storage file timestamp (default: 'yymmdd_HHMMSS')
+%
+%		file_basename
+%		base for data storage filename (default: 'data')
+%
+%		out_dir
+%		data storage sub directory (default: 'mat')
+%
+%		channel_labels
+%		labels for INCHANNELS (cell array, default: empty)
+%
+%		preview_enable
+%		enable preview of data (default: 0)
+%
+%		preview_dcoffset
+%		remove DC component of data for preview (default: 1)
+%
+%		polling_rate
+%		how often to check for data samples (in s, default: .05)
+%
+%	Example:
+%	
+%	Record from 'nidaq' 'dev2' channels [0:5], and preview data
+%
+%	>>nyedack_main([0:5],[],'in_device_type','nidaq','in_device','dev2','preview_enable',1);
+%	
 %
 
 % collect the input variables and use defaults if necessary
-
-% preview is deprecated ATM
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PARAMETER COLLECTION %%%%%%%%%%%%%%%%%
 
@@ -18,26 +82,26 @@ if nargin<1 | isempty(INCHANNELS), INCHANNELS=0; end
 nparams=length(varargin);
 
 restarts=0;
-base_dir='nidaq'; % base directory to save
+base_dir='nyedack'; % base directory to save
 fs=40e3; % sampling frequency (in Hz)
-note='';
+note=''; % note to save in log file
 save_freq=60; % save frequency (in s)
 stop_time=[100 0 0 0 ]; % when to stop recording (d h m s)
-in_device='dev2';
-in_device_type='nidaq';
-out_device='dev2';
-out_device_type='nidaq';
-folder_format='yyyy-mm-dd';
-file_format='yymmdd_HHMMSS';
-out_dir='mat';
-channel_labels={};
+in_device='dev2'; % location of input device
+in_device_type='nidaq'; % input device type
+out_device='dev2'; % location of output device
+out_device_type='nidaq'; % output device type
+folder_format='yyyy-mm-dd'; % date string format for folders
+file_format='yymmdd_HHMMSS'; % date string format for files
+out_dir='mat'; % save files to this sub directory
+channel_labels={}; % labels for INCHANNELS
 preview_enable=0; % enable preview?
 preview_nrows=5;
 preview_pxrow=100;
 preview_pxcolumn=300;
 preview_dcoffset=1; % remove DC offset for preview?
 
-file_basename='data';
+file_basename='data'; % basename for save files
 polling_rate=.05; % how often to poll for data (in s)? only used with preview off
 		  % otherwise this is tied to the refresh rate of the GUI
 

@@ -1,75 +1,7 @@
-function batch_record(INCHANNELS,OUTPUT,varargin)
+function nyedack_main(INCHANNELS,OUTPUT,varargin)
 %
 %
-% batch_record(INCHANNELS,stop_time,save_freq,note,fs,base_dir,PREVIEW)
 %
-% INCHANNELS
-% vector of the channel(s) to record from (default [0])
-%
-%
-% OUTPUT
-% structure of output parameters
-%
-% OUTPUT.channel
-% DACOUT channel(s) to use
-%
-% OUTPUT.data
-% data to be fed out (must equal n of channels)
-%
-% OUTPUT.fs
-% output sampling rate
-%
-% OUTPUT.interval
-% how often do we want to trigger output?
-%
-% OUTPUT.repeat
-% how often are we repeating the output?
-%
-% stop_time       
-% time vector specifying STOP time (default [0 0 1 0])
-%
-% save_freq    
-% how often to save to disk (in s, default: 60)
-%
-% note    
-% string that accepts standard escape characters to include in the log (default '')
-%
-% fs    
-% sampling rate (default 40000)
-%
-% base_dir
-% base data directory for storing data
-%
-% PREVIEW
-% a structure that contains the fields 'samples' and 'ylim' that
-% allows you to display the logged data as it is being recorded.
-% Ommission of this argument will prevent the preview from being
-% displayed, and ommitting the field ylim yields a dynamically
-% scaled ordinate in the preview window
-%
-%
-% stop_time AND save_freq are vectors of the following format:
-% [days hours minutes seconds]
-%
-% Data files are stored in an automatically maintained directory
-% hierarchy.  The variable data_directory in the script is the base
-% directory, then data is sorted using the following directory structure:
-%
-% data_directory/YEAR/MONTH/DAY/stop_time
-%
-% Where stop_time is the start time (in HHMMSS format)
-%
-% Examples:
-%
-% batch_record([6 7],[0 0 0 30],[0 0 0 15],'test',40e3,10e3)
-%
-% Records until 0 0 0 30 (12:00:30 AM) in 15 second "chunks" from channels 6
-% and 7.  The output is 2 files containing 15 seconds of data,
-% each in the daq format.  Shows a preview of 10e3 samples as
-% they're collected.
-%
-% It is recommended that the user excludes "preview" as the feature
-% is still VERY EXPERIMENTAL
 
 % collect the input variables and use defaults if necessary
 
@@ -86,18 +18,20 @@ if nargin<1 | isempty(INCHANNELS), INCHANNELS=0; end
 nparams=length(varargin);
 
 restarts=0;
-base_dir='nidaq';
+base_dir='nidaq'; % base directory to save
 fs=40e3; % sampling frequency (in Hz)
 note='';
 save_freq=60; % save frequency (in s)
-stop_time=[100 0 0 0 ]; % when to stop recording
+stop_time=[100 0 0 0 ]; % when to stop recording (d h m s)
 in_device='dev2';
+in_device_type='nidaq';
 out_device='dev2';
+out_device_type='nidaq';
 folder_format='yyyy-mm-dd';
 file_format='yymmdd_HHMMSS';
 out_dir='mat';
 channel_labels={};
-preview_enable=0;
+preview_enable=0; % enable preview?
 preview_nrows=5;
 preview_pxrow=100;
 preview_pxcolumn=300;
@@ -123,8 +57,12 @@ for i=1:2:nparams
 			fs=varargin{i+1};
 		case 'save_freq'
 			save_freq=varargin{i+1};
+		case 'in_device_type'
+			in_device_type=varargin{i+1};
 		case 'in_device'
 			in_device=varargin{i+1};
+		case 'out_device_type'
+			out_device_type=varargin{i+1};
 		case 'out_device'
 			out_device=varargin{i+1};
 		case 'folder_format'
@@ -190,7 +128,7 @@ end
 
 % open the analog input object
 
-analog_input = analoginput('nidaq',in_device);
+analog_input = analoginput(in_device_type,in_device);
 set(analog_input,'InputType','SingleEnded');
 
 ch=addchannel(analog_input,INCHANNELS);
@@ -255,7 +193,7 @@ if ~isempty(OUTPUT)
 
 	% add a for loop and make analog_output a cell array if we want to have multiple outputs?
 
-	analog_output=analogoutput('nidaq',out_device);
+	analog_output=analogoutput(out_device_type,out_device);
 	ch=addchannel(analog_output,OUTPUT.channels);
 	actualrate=setverify(analog_output,'SampleRate',OUTPUT.fs);
 

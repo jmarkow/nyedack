@@ -1,5 +1,5 @@
 function dump_data(obj,event,dump_samples,save_dir,folder_format,out_dir,file_basename,file_format,logfile,...
-		actualrate,save_fs,dec,channel_labels,preview_figure,channel_axis,channel_plot,dcoffset)
+		preview_figure,channel_axis,channel_plot,dcoffset)
 
 % basically, a circular buffer is used!
 
@@ -12,8 +12,10 @@ global preview_refresh_rate;
 
 % do we want to preview?
 
+actualrate=obj.SampleRate;
 available_samples=obj.SamplesAvailable;
 refresh_samples=round((preview_refresh_rate/1e3)*actualrate);
+nchannels=length(obj.Channel);
 
 %%% preview code
 
@@ -34,13 +36,13 @@ if ~isempty(preview_figure) & available_samples<dump_samples & available_samples
 
 	for i=1:length(channel_axis)
 
-        % bail if the figure has been deleted...
-        
-        if ~ishandle(channel_plot(i))
-            return;
-        end
-        
-        set(channel_plot(i),'XData',time,'YData',data(:,i));
+		% bail if the figure has been deleted...
+		
+		if ~ishandle(channel_plot(i))
+		    return;
+		end
+		
+		set(channel_plot(i),'XData',time,'YData',data(:,i));
 		old_xlimits=get(channel_axis(i),'xlim');
 		old_ylimits=get(channel_axis(i),'ylim');
 
@@ -64,7 +66,21 @@ if available_samples>dump_samples
 		datafile_name=[ file_basename '_' datestr(now,file_format) '.mat' ];
 
 		data.fs=actualrate;
-		data.labels=channel_labels;
+		data.labels=[];
+		data.names={};
+		data.parameters.units={};
+		data.parameters.sensor_range={};
+		data.parameters.input_range={};
+		data.parameters.units_range={};
+
+		for i=1:nchannels
+			data.labels(i)=obj.Channel(i).HwChannel;
+			data.names{i}=obj.Channel(i).ChannelName;
+			data.parameters.units{i}=obj.Channel(i).Units;
+			data.parameters.sensor_range=obj.Channel(i).SensorRange;
+			data.parameters.input_range=obj.Channel(i).InputRange;
+			data.parameters.units_range=obj.Channel(i).UnitsRange;
+		end
 
 		save_dir=fullfile(save_dir,datestr(now,folder_format),out_dir);
 		if ~exist(save_dir,'dir')

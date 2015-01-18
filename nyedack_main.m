@@ -49,7 +49,7 @@ function nyedack_main(INCHANNELS,OUTPUT,varargin)
 %		out_dir
 %		data storage sub directory (default: 'mat')
 %
-%		channel_labels
+%		hannel_labels
 %		labels for INCHANNELS (cell array, default: empty)
 %
 %		preview_enable
@@ -197,6 +197,10 @@ set(analog_input,'InputType','SingleEnded');
 
 ch=addchannel(analog_input,INCHANNELS);
 actualrate=setverify(analog_input,'SampleRate',fs);
+
+for i=1:length(analog_input.Channel)
+	analog_input.Channel(i).ChannelName=channel_labels{i};
+end
 
 % check to see if the actual sampling rate meets our specs, otherwise bail
 
@@ -434,7 +438,7 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 set(button_figure,'Visible','on');
 set(analog_input,'TimerFcn',{@nyedack_dump_data,...
 	recording_duration,base_dir,folder_format,out_dir,file_basename,file_format,...
-	logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot,preview_dcoffset});
+	logfile,preview_figure,channel_axis,channel_plot,preview_dcoffset});
 
 start(analog_input)
 

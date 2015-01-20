@@ -1,79 +1,75 @@
-function batch_record(INCHANNELS,OUTPUT,varargin)
+function nyedack_main(INCHANNELS,OUTPUT,varargin)
+% CLI interface for recording data through the MATLAB legacy interface
 %
+%	nyedack_main(INCHANNELS,OUTPUT,varargin)
 %
-% batch_record(INCHANNELS,stop_time,save_freq,note,fs,base_dir,PREVIEW)
+%	INCHANNELS
+%	vector of NIDAQ channels to record from (start from 0)
 %
-% INCHANNELS
-% vector of the channel(s) to record from (default [0])
+%	OUTPUT
+%	structure specifying how to deliver output (leave empty for no output)
+%	
+%	the following may be specified as parameter/value pairs:
 %
+%		fs
+%		data acquisition sampling rate (default: 40e3)
 %
-% OUTPUT
-% structure of output parameters
+%		base_dir
+%		base directory for data storage (default: 'nyedack')
 %
-% OUTPUT.channel
-% DACOUT channel(s) to use
+%		note
+%		string containing note to include in data storage log (default: empty)
 %
-% OUTPUT.data
-% data to be fed out (must equal n of channels)
+%		save_freq
+%		frequency for dumping data to disk from memory (in s, default: 60)
 %
-% OUTPUT.fs
-% output sampling rate
+%		stop_time
+%		time to stop recording (vector in [d h m s] format, default: [100 0 0 0], will record for 100 days)
 %
-% OUTPUT.interval
-% how often do we want to trigger output?
+%		in_device
+%		input device location (default: 'dev2')
 %
-% OUTPUT.repeat
-% how often are we repeating the output?
+%		in_device_type (default: 'nidaq')
 %
-% stop_time       
-% time vector specifying STOP time (default [0 0 1 0])
+%		out_device
+%		output device location (default: 'dev2')
 %
-% save_freq    
-% how often to save to disk (in s, default: 60)
+%		output_device_type
+%		output device type (default: 'nidaq')
 %
-% note    
-% string that accepts standard escape characters to include in the log (default '')
+%		folder_format
+%		datestr format for data storage folders (default: 'yyyy-mm-dd')
 %
-% fs    
-% sampling rate (default 40000)
+%		file_format
+%		datestr format for data storage file timestamp (default: 'yymmdd_HHMMSS')
 %
-% base_dir
-% base data directory for storing data
+%		file_basename
+%		base for data storage filename (default: 'data')
 %
-% PREVIEW
-% a structure that contains the fields 'samples' and 'ylim' that
-% allows you to display the logged data as it is being recorded.
-% Ommission of this argument will prevent the preview from being
-% displayed, and ommitting the field ylim yields a dynamically
-% scaled ordinate in the preview window
+%		out_dir
+%		data storage sub directory (default: 'mat')
 %
+%		hannel_labels
+%		labels for INCHANNELS (cell array, default: empty)
 %
-% stop_time AND save_freq are vectors of the following format:
-% [days hours minutes seconds]
+%		preview_enable
+%		enable preview of data (default: 0)
 %
-% Data files are stored in an automatically maintained directory
-% hierarchy.  The variable data_directory in the script is the base
-% directory, then data is sorted using the following directory structure:
+%		preview_dcoffset
+%		remove DC component of data for preview (default: 1)
 %
-% data_directory/YEAR/MONTH/DAY/stop_time
+%		polling_rate
+%		how often to check for data samples (in s, default: .05)
 %
-% Where stop_time is the start time (in HHMMSS format)
+%	Example:
+%	
+%	Record from 'nidaq' 'dev2' channels [0:5], and preview data
 %
-% Examples:
+%	>>nyedack_main([0:5],[],'in_device_type','nidaq','in_device','dev2','preview_enable',1);
+%	
 %
-% batch_record([6 7],[0 0 0 30],[0 0 0 15],'test',40e3,10e3)
-%
-% Records until 0 0 0 30 (12:00:30 AM) in 15 second "chunks" from channels 6
-% and 7.  The output is 2 files containing 15 seconds of data,
-% each in the daq format.  Shows a preview of 10e3 samples as
-% they're collected.
-%
-% It is recommended that the user excludes "preview" as the feature
-% is still VERY EXPERIMENTAL
 
 % collect the input variables and use defaults if necessary
-
-% preview is deprecated ATM
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PARAMETER COLLECTION %%%%%%%%%%%%%%%%%
 
@@ -86,24 +82,26 @@ if nargin<1 | isempty(INCHANNELS), INCHANNELS=0; end
 nparams=length(varargin);
 
 restarts=0;
-base_dir='nidaq';
+base_dir='nyedack'; % base directory to save
 fs=40e3; % sampling frequency (in Hz)
-note='';
+note=''; % note to save in log file
 save_freq=60; % save frequency (in s)
-stop_time=[100 0 0 0 ]; % when to stop recording
-in_device='dev2';
-out_device='dev2';
-folder_format='yyyy-mm-dd';
-file_format='yymmdd_HHMMSS';
-out_dir='mat';
-channel_labels={};
-preview_enable=0;
+stop_time=[100 0 0 0 ]; % when to stop recording (d h m s)
+in_device='dev2'; % location of input device
+in_device_type='nidaq'; % input device type
+out_device='dev2'; % location of output device
+out_device_type='nidaq'; % output device type
+folder_format='yyyy-mm-dd'; % date string format for folders
+file_format='yymmdd_HHMMSS'; % date string format for files
+out_dir='mat'; % save files to this sub directory
+channel_labels={}; % labels for INCHANNELS
+preview_enable=0; % enable preview?
 preview_nrows=5;
 preview_pxrow=100;
 preview_pxcolumn=300;
 preview_dcoffset=1; % remove DC offset for preview?
 
-file_basename='data';
+file_basename='data'; % basename for save files
 polling_rate=.05; % how often to poll for data (in s)? only used with preview off
 		  % otherwise this is tied to the refresh rate of the GUI
 
@@ -123,8 +121,12 @@ for i=1:2:nparams
 			fs=varargin{i+1};
 		case 'save_freq'
 			save_freq=varargin{i+1};
+		case 'in_device_type'
+			in_device_type=varargin{i+1};
 		case 'in_device'
 			in_device=varargin{i+1};
+		case 'out_device_type'
+			out_device_type=varargin{i+1};
 		case 'out_device'
 			out_device=varargin{i+1};
 		case 'folder_format'
@@ -190,11 +192,15 @@ end
 
 % open the analog input object
 
-analog_input = analoginput('nidaq',in_device);
+analog_input = analoginput(in_device_type,in_device);
 set(analog_input,'InputType','SingleEnded');
 
 ch=addchannel(analog_input,INCHANNELS);
 actualrate=setverify(analog_input,'SampleRate',fs);
+
+for i=1:length(analog_input.Channel)
+	analog_input.Channel(i).ChannelName=channel_labels{i};
+end
 
 % check to see if the actual sampling rate meets our specs, otherwise bail
 
@@ -255,7 +261,7 @@ if ~isempty(OUTPUT)
 
 	% add a for loop and make analog_output a cell array if we want to have multiple outputs?
 
-	analog_output=analogoutput('nidaq',out_device);
+	analog_output=analogoutput(out_device_type,out_device);
 	ch=addchannel(analog_output,OUTPUT.channels);
 	actualrate=setverify(analog_output,'SampleRate',OUTPUT.fs);
 
@@ -432,7 +438,7 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 set(button_figure,'Visible','on');
 set(analog_input,'TimerFcn',{@nyedack_dump_data,...
 	recording_duration,base_dir,folder_format,out_dir,file_basename,file_format,...
-	logfile,actualrate,channel_labels,preview_figure,channel_axis,channel_plot,preview_dcoffset});
+	logfile,preview_figure,channel_axis,channel_plot,preview_dcoffset});
 
 start(analog_input)
 

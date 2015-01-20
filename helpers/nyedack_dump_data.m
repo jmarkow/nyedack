@@ -66,7 +66,10 @@ if available_samples>dump_samples
 		data.fs=actualrate;
 		data.labels=channel_labels;
 
-		save_dir=fullfile(save_dir,datestr(now,folder_format),out_dir);
+		if ~isempty(folder_format)	
+			save_dir=fullfile(save_dir,datestr(now,folder_format),out_dir);
+		end
+
 		if ~exist(save_dir,'dir')
 			mkdir(save_dir);
 		end

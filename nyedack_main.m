@@ -100,7 +100,7 @@ preview_nrows=5;
 preview_pxrow=100;
 preview_pxcolumn=300;
 preview_dcoffset=1; % remove DC offset for preview?
-
+channel_skew='equisample'; % maximum time between samples
 file_basename='data'; % basename for save files
 polling_rate=.05; % how often to poll for data (in s)? only used with preview off
 		  % otherwise this is tied to the refresh rate of the GUI
@@ -151,6 +151,8 @@ for i=1:2:nparams
 			polling_rate=varargin{i+1};
 		case 'preview_dcoffset'
 			preview_dcoffset=varargin{i+1};
+		case 'channel_skew'
+			channel_skew=varargin{i+1};
 		otherwise
 	end
 end
@@ -216,6 +218,7 @@ recording_duration=round(save_freq*actualrate);
 polling_duration=round(polling_rate*actualrate);
 
 set(analog_input,'SamplesPerTrigger',inf)
+set(analog_input,'ChannelskewMode',channel_skew);
 
 
 save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
@@ -227,6 +230,7 @@ fprintf(logfile,'Run started at %s\n\n',datestr(now));
 fprintf(logfile,[note '\n']);
 fprintf(logfile,'User specified save frequency: %g minutes\n',save_freq/60);
 fprintf(logfile,'Recording until: %s\n',datestr(rec_datevec));
+fprintf(logfile,'Channel skew:  %g\n',analog_input.ChannelSkew);
 fprintf(logfile,'Sampling rate:  %g\nChannels=[',actualrate);
 
 for i=1:length(INCHANNELS)

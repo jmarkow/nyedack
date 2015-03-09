@@ -1,5 +1,5 @@
 function dump_data(obj,event,dump_samples,save_dir,folder_format,out_dir,file_basename,file_format,logfile,...
-		preview_figure,channel_axis,channel_plot,dcoffset)
+		preview_figure,channel_axis,channel_plot,dcoffset,note)
 
 % basically, a circular buffer is used!
 
@@ -72,6 +72,7 @@ if available_samples>dump_samples
 		data.parameters.sensor_range={};
 		data.parameters.input_range={};
 		data.parameters.units_range={};
+        data.note=note;
 
 		for i=1:nchannels
 			data.labels(i)=obj.Channel(i).HwChannel;

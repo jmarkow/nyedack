@@ -180,7 +180,7 @@ nchannels=length(INCHANNELS);
 nlabels=length(channel_labels);
 
 for i=nlabels+1:nchannels
-	channel_labels{i}=sprintf('CH %i',i);
+	channel_labels{i}=sprintf('CH %i',INCHANNELS(i));
 end
 
 start_time=([datestr(now,'HHMMSS')]);
@@ -220,30 +220,11 @@ polling_duration=round(polling_rate*actualrate);
 set(analog_input,'SamplesPerTrigger',inf)
 set(analog_input,'ChannelskewMode',channel_skew);
 
+
 save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
-if ~exist(save_dir,'dir'), mkdir(save_dir); end
+%if ~exist(save_dir,'dir'), mkdir(save_dir); end
 
-logfile_name=fullfile(save_dir,'..','log');
-
-if exist([ logfile_name '.txt' ],'file')
-	nameflag=1;
-else
-	nameflag=0;
-end
-
-counter=1;
-basename=logfile_name;
-
-while nameflag
-	logfile_name=sprintf('%s_%i',basename,counter);
-	if exist(logfile_name,'file')
-		nameflag=1;
-		counter=counter+1;
-	else
-		nameflag=0;
-	end
-end
-
+logfile_name=sprintf('%s_%s',fullfile(base_dir,'log'),datestr(now,30));
 logfile=fopen([ logfile_name '.txt' ],'w');
 fprintf(logfile,'Run started at %s\n\n',datestr(now));
 fprintf(logfile,[note '\n']);

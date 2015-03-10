@@ -100,7 +100,7 @@ preview_nrows=5;
 preview_pxrow=100;
 preview_pxcolumn=300;
 preview_dcoffset=1; % remove DC offset for preview?
-channel_skew='minimum'; % time between samples
+channel_skew='equisample'; % time between samples
 file_basename='data'; % basename for save files
 polling_rate=.05; % how often to poll for data (in s)? only used with preview off
 		  % otherwise this is tied to the refresh rate of the GUI

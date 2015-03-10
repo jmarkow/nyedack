@@ -220,7 +220,6 @@ polling_duration=round(polling_rate*actualrate);
 set(analog_input,'SamplesPerTrigger',inf)
 set(analog_input,'ChannelskewMode',channel_skew);
 
-
 save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
 %if ~exist(save_dir,'dir'), mkdir(save_dir); end
 

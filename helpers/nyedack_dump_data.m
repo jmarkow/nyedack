@@ -93,7 +93,8 @@ if available_samples>dump_samples
 		save(fullfile(save_dir,datafile_name),'data');
 		fprintf(logfile,'%s saved successfully at %s\n',fullfile(save_dir,datafile_name),datestr(now));
 		disp([ fullfile(save_dir,datafile_name) ' saved successfully at ' datestr(now) ]);
-	catch
+	catch err
+		disp([err]);
 		warning('Could not get data, flushing...');
 		flushdata(obj);
 	end

@@ -433,7 +433,7 @@ end
 
 set(status_text,'string','Status:  running','ForegroundColor','g');
 
-% pause for a millisecond
+% pause for a millisecond, consider storing status in userdata
 
 while now<datenum(rec_datevec)
 	if ~ishandle(button_figure), break; end

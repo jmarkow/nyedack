@@ -161,10 +161,8 @@ refresh_rates=[ 50 100 200 500 1e3 2e3 5e3 ];
 voltage_scales=[ 1 5 1e2 5e2 1e3 5e3 1e4 5e4 1e5 5e5 1e6 5e6 1e7 5e7 1e8 5e8 ];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% TODO: finish save_directory creation
-% TODO: put preview back in
-% TODO: change function names as appropriate
-% TODO: simplify as much as possible!
+% TODO: independent control of x and y axes
+% TODO: activex control (allow for manipulation of TDT variables)
 
 rec_datevec=datevec(addtodate(today,stop_time(1),'day'));
 rec_datevec(4:6)=stop_time(2:4);
@@ -376,6 +374,9 @@ if preview_enable
 	h_spacing=.02;
 
 	for i=1:nchannels
+
+		% TODO:  add axis sliders for each channel 
+
 		cur_column=ceil(i/(preview_nrows));
 		idx=mod(i,preview_nrows);
 		idx(idx==0)=preview_nrows;

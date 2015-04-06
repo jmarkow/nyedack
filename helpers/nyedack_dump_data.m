@@ -21,7 +21,6 @@ nchannels=length(obj.Channel);
 
 if ~isempty(preview_figure) & available_samples<dump_samples & available_samples>refresh_samples
 
-	ylimits=[-preview_voltage_scale/1e6 preview_voltage_scale/1e6];
 	xlimits=[0 preview_refresh_rate/1e3];
 
 	data=peekdata(obj,refresh_samples);
@@ -41,6 +40,8 @@ if ~isempty(preview_figure) & available_samples<dump_samples & available_samples
 		if ~ishandle(channel_plot(i))
 		    return;
 		end
+		
+		ylimits=[-preview_voltage_scale(i)/1e6 preview_voltage_scale(i)/1e6];
 		
 		set(channel_plot(i),'XData',time,'YData',data(:,i));
 		old_xlimits=get(channel_axis(i),'xlim');

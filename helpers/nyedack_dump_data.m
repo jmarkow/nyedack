@@ -1,5 +1,5 @@
 function dump_data(obj,event,dump_samples,save_dir,folder_format,out_dir,file_basename,file_format,logfile,...
-		preview_figure,channel_axis,channel_plot,dcoffset)
+		preview_figure,channel_axis,channel_plot,dcoffset,note)
 
 % basically, a circular buffer is used!
 
@@ -21,7 +21,6 @@ nchannels=length(obj.Channel);
 
 if ~isempty(preview_figure) & available_samples<dump_samples & available_samples>refresh_samples
 
-	ylimits=[-preview_voltage_scale/1e6 preview_voltage_scale/1e6];
 	xlimits=[0 preview_refresh_rate/1e3];
 
 	data=peekdata(obj,refresh_samples);
@@ -41,6 +40,8 @@ if ~isempty(preview_figure) & available_samples<dump_samples & available_samples
 		if ~ishandle(channel_plot(i))
 		    return;
 		end
+		
+		ylimits=[-preview_voltage_scale(i)/1e6 preview_voltage_scale(i)/1e6];
 		
 		set(channel_plot(i),'XData',time,'YData',data(:,i));
 		old_xlimits=get(channel_axis(i),'xlim');
@@ -72,6 +73,7 @@ if available_samples>dump_samples
 		data.parameters.sensor_range={};
 		data.parameters.input_range={};
 		data.parameters.units_range={};
+        data.note=note;
 
 		for i=1:nchannels
 			data.labels(i)=obj.Channel(i).HwChannel;
@@ -93,7 +95,9 @@ if available_samples>dump_samples
 		save(fullfile(save_dir,datafile_name),'data');
 		fprintf(logfile,'%s saved successfully at %s\n',fullfile(save_dir,datafile_name),datestr(now));
 		disp([ fullfile(save_dir,datafile_name) ' saved successfully at ' datestr(now) ]);
-	catch err
+        
+    catch err
+        
 		disp([err]);
 		warning('Could not get data, flushing...');
 		flushdata(obj);

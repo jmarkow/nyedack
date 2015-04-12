@@ -218,7 +218,6 @@ polling_duration=round(polling_rate*actualrate);
 set(analog_input,'SamplesPerTrigger',inf)
 set(analog_input,'ChannelskewMode',channel_skew);
 
-
 save_dir=fullfile(base_dir,datestr(now,folder_format),out_dir);
 %if ~exist(save_dir,'dir'), mkdir(save_dir); end
 
@@ -330,7 +329,7 @@ if preview_enable
 	end
 
 	for i=1:length(voltage_scales)
-		voltage_string{i}=sprintf('+/- %.0e uV',voltage_scales(i));
+		voltage_string{i}=sprintf('+/- %.0e V',voltage_scales(i)/1e6);
 	end
 
 	ncolumns=ceil(nchannels/preview_nrows);
@@ -346,19 +345,8 @@ if preview_enable
 		'Units','Normalized',...
 		'Value',1,...
 		'FontSize',11,...
-		'Position',[.15 .05 .35 .1],...
+		'Position',[.25 .05 .35 .1],...
 		'Call',{@nyedack_set_refresh,analog_input,refresh_rates});
-
-	voltage_setting=uicontrol(preview_figure,'Style','popupmenu',...
-		'String',voltage_string,...
-		'Units','Normalized',...
-		'Value',min(6,length(voltage_scales)),...
-		'FontSize',11,...
-		'Position',[.6 .05 .35 .1],...
-		'Call',{@nyedack_set_voltage,voltage_scales});
-
-	voltage_val=get(voltage_setting,'value');
-	preview_voltage_scale=voltage_scales(voltage_val);
 
 	refresh_val=get(refresh_setting,'value');
 	cur_rate=refresh_rates(refresh_val); % rates are in ms
@@ -399,7 +387,21 @@ if preview_enable
 			set(channel_axis(i),'ytick',[]);
 		end
 
+		pos=get(channel_axis(i),'pos');
+        set(channel_axis(i),'pos',[pos(1) pos(2) pos(3)-.2 pos(4)]);
+        pos=get(channel_axis(i),'pos');
+		voltage_setting_axis(i)=uicontrol(preview_figure,'Style','popupmenu',...
+			'String',voltage_string,...
+			'Units','Normalized',...
+			'Value',min(6,length(voltage_scales)),...
+			'FontSize',11,...
+			'Position',[pos(1)+pos(3)+.05 pos(2)+pos(4)/2 .2 .1],...
+			'Call',{@nyedack_set_voltage,voltage_scales,i});
+
+		preview_voltage_scale(i)=voltage_scales(get(voltage_setting_axis(i),'value'));
+
 	end
+
 
 	disp('Note that the card polling rate is set to the refresh rate...');
 
@@ -424,7 +426,7 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 set(button_figure,'Visible','on');
 set(analog_input,'TimerFcn',{@nyedack_dump_data,...
 	recording_duration,base_dir,folder_format,out_dir,file_basename,file_format,...
-	logfile,preview_figure,channel_axis,channel_plot,preview_dcoffset});
+	logfile,preview_figure,channel_axis,channel_plot,preview_dcoffset,note});
 
 start(analog_input)
 

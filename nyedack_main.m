@@ -363,8 +363,6 @@ if preview_enable
 
 	for i=1:nchannels
 
-		% TODO:  add axis sliders for each channel 
-
 		cur_column=ceil(i/(preview_nrows));
 		idx=mod(i,preview_nrows);
 		idx(idx==0)=preview_nrows;
@@ -388,8 +386,9 @@ if preview_enable
 		end
 
 		pos=get(channel_axis(i),'pos');
-        set(channel_axis(i),'pos',[pos(1) pos(2) pos(3)-.2 pos(4)]);
-        pos=get(channel_axis(i),'pos');
+        	set(channel_axis(i),'pos',[pos(1) pos(2) pos(3)-.2 pos(4)]);
+        	
+		pos=get(channel_axis(i),'pos');
 		voltage_setting_axis(i)=uicontrol(preview_figure,'Style','popupmenu',...
 			'String',voltage_string,...
 			'Units','Normalized',...
@@ -427,7 +426,6 @@ set(button_figure,'Visible','on');
 set(analog_input,'TimerFcn',{@nyedack_dump_data,...
 	recording_duration,base_dir,folder_format,out_dir,file_basename,file_format,...
 	logfile,preview_figure,channel_axis,channel_plot,preview_dcoffset,note});
-
 start(analog_input)
 
 if ~isempty(OUTPUT)

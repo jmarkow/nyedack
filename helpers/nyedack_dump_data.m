@@ -105,7 +105,6 @@ if available_samples>dump_samples
 		set(status_text,'string','Status:  error','ForegroundColor','r');
 
 		%flushdata(obj);
-		
-		rethrow(err);
+		%rethrow(err);
 	end
 end

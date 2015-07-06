@@ -459,7 +459,6 @@ while now<datenum(rec_datevec)
 		warning('Error detected, attempting to reset acquisition system...');
 		nyedack_cleanup_routine([],[],save_dir,logfile,objects,...
 			button_figure,preview_figure);
-		daqreset;
 		nyedack_main(INCHANNELS,OUTPUT,varargin{:},'recurse',recurse+1);
 	end
 

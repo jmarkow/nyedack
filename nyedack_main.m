@@ -81,6 +81,8 @@ if nargin<1 | isempty(INCHANNELS), INCHANNELS=0; end
 
 nparams=length(varargin);
 
+max_recurse=5;
+
 restarts=0;
 base_dir='nyedack'; % base directory to save
 fs=40e3; % sampling frequency (in Hz)
@@ -104,6 +106,7 @@ channel_skew='equisample'; % time between samples
 file_basename='data'; % basename for save files
 polling_rate=.05; % how often to poll for data (in s)? only used with preview off
 		  % otherwise this is tied to the refresh rate of the GUI
+recurse=0;
 
 if mod(nparams,2)>0
 	error('Parameters must be specified as parameter/value pairs!');
@@ -153,8 +156,14 @@ for i=1:2:nparams
 			preview_dcoffset=varargin{i+1};
 		case 'channel_skew'
 			channel_skew=varargin{i+1};
+		case 'recurse'
+			recurse=varargin{i+1};
 		otherwise
 	end
+end
+
+if recurse>max_recurse
+	error('Recursion limit exceeded...');
 end
 
 refresh_rates=[ 50 100 200 500 1e3 2e3 5e3 ];
@@ -425,7 +434,7 @@ quit_button=uicontrol(button_figure,'style','pushbutton',...
 set(button_figure,'Visible','on');
 set(analog_input,'TimerFcn',{@nyedack_dump_data,...
 	recording_duration,base_dir,folder_format,out_dir,file_basename,file_format,...
-	logfile,preview_figure,channel_axis,channel_plot,preview_dcoffset,note});
+	logfile,preview_figure,channel_axis,channel_plot,preview_dcoffset,status_text,note});
 
 start(analog_input)
 
@@ -440,6 +449,20 @@ set(status_text,'string','Status:  running','ForegroundColor','g');
 while now<datenum(rec_datevec)
 	if ~ishandle(button_figure), break; end
 	pause(1e-3);
+
+	% get status
+	
+	tmp=get(status_text,'string');
+	iserr=findstr(tmp,'error');
+
+	if iserr
+		warning('Error detected, attempting to reset acquisition system...');
+		nyedack_cleanup_routine([],[],save_dir,logfile,objects,...
+			button_figure,preview_figure);
+		daqreset;
+		nyedack_main(INCHANNELS,OUTPUT,varargin{:},'recurse',recurse+1);
+	end
+
 end
 
 % if everything worked, copy the finish time and wrap up

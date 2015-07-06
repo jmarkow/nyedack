@@ -1,5 +1,5 @@
 function dump_data(obj,event,dump_samples,save_dir,folder_format,out_dir,file_basename,file_format,logfile,...
-		preview_figure,channel_axis,channel_plot,dcoffset,note)
+		preview_figure,channel_axis,channel_plot,dcoffset,status_text,note)
 
 % basically, a circular buffer is used!
 
@@ -100,8 +100,10 @@ if available_samples>dump_samples
        
 		%TODO: test rethrowing error to trigger RunTimeErrorFcn
 
-		%disp([err]);
-		%warning('Could not get data, flushing...');
+		disp([err]);
+		warning('Could not get data...');
+		set(status_text,'string','Status:  error','ForegroundColor','r');
+
 		%flushdata(obj);
 		
 		rethrow(err);

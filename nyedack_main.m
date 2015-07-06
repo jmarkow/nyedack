@@ -457,9 +457,10 @@ while now<datenum(rec_datevec)
 
 	if iserr
 		warning('Error detected, attempting to reset acquisition system...');
-		nyedack_cleanup_routine([],[],save_dir,logfile,objects,...
-			button_figure,preview_figure);
-		nyedack_main(INCHANNELS,OUTPUT,varargin{:},'recurse',recurse+1);
+		% TODO:  attempt !matlab -r functionname to restart everything, daqreset not enough
+		%nyedack_cleanup_routine([],[],save_dir,logfile,objects,...
+		%	button_figure,preview_figure);
+		%nyedack_main(INCHANNELS,OUTPUT,varargin{:},'recurse',recurse+1);
 	end
 
 end

@@ -97,9 +97,13 @@ if available_samples>dump_samples
 		disp([ fullfile(save_dir,datafile_name) ' saved successfully at ' datestr(now) ]);
         
     catch err
-        
-		disp([err]);
-		warning('Could not get data, flushing...');
-		flushdata(obj);
+       
+		%TODO: test rethrowing error to trigger RunTimeErrorFcn
+
+		%disp([err]);
+		%warning('Could not get data, flushing...');
+		%flushdata(obj);
+		
+		rethrow(err);
 	end
 end
